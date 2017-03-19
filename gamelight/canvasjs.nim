@@ -18,6 +18,20 @@ type
     alpha* {.importc.}: bool
     # TODO: WebGL
 
+proc getPixelRatio*(): float =
+  # Based on: http://stackoverflow.com/a/15666143/492186
+  {.emit: """
+    var ctx = document.createElement("canvas").getContext("2d"),
+        dpr = window.devicePixelRatio || 1,
+        bsr = ctx.webkitBackingStorePixelRatio ||
+                ctx.mozBackingStorePixelRatio ||
+                ctx.msBackingStorePixelRatio ||
+                ctx.oBackingStorePixelRatio ||
+                ctx.backingStorePixelRatio || 1;
+
+    `result` = dpr / bsr;
+  """.}
+
 {.push importcpp.}
 
 proc getContext*(canvasElement: Element, contextType: cstring,
@@ -41,5 +55,5 @@ proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int)
 
 proc translate*(context: CanvasRenderingContext, x, y: int)
 
-proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int)
+proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
 

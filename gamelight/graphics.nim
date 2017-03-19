@@ -1,5 +1,5 @@
 import future
-import dom
+import dom, jsconsole
 import canvasjs, vec
 
 type
@@ -9,28 +9,44 @@ type
     preferredWidth: int
     preferredHeight: int
 
+proc getWidth(preferredWidth: int): int =
+  if preferredWidth == -1:
+    window.innerWidth
+  else:
+    preferredWidth
+
+proc getHeight(preferredHeight: int): int =
+  if preferredHeight == -1:
+    window.innerHeight
+  else:
+    preferredHeight
+
 proc resizeCanvas(renderer: Renderer2D) =
-  renderer.canvas.width =
-    if renderer.preferredWidth == -1:
-      window.innerWidth
-    else:
-      renderer.preferredWidth
+  renderer.canvas.width = getWidth(renderer.preferredWidth)
 
-  renderer.canvas.height =
-    if renderer.preferredHeight == -1:
-      window.innerHeight
-    else:
-      renderer.preferredHeight
+  renderer.canvas.height = getHeight(renderer.preferredHeight)
 
-proc newRenderer2D*(id: string, width: int = -1, height: int = -1): Renderer2D =
+proc newRenderer2D*(id: string, width = -1, height = -1,
+                    hidpi = false): Renderer2D =
   ## Creates a new 2D renderer on a canvas element with the specified
   ## ID. When the ``width`` and ``height`` parameters are set to
   ## ``-1`` the whole screen will be used.
-
+  ##
   ## This proc assumes that the document has been loaded.
+  ##
+  ## The ``hidpi`` parameter determines whether to create a High
+  ## DPI canvas.
 
   var canvas = document.getElementById(id).EmbedElement
   var context = canvas.getContext("2d")
+  if hidpi:
+    let ratio = getPixelRatio()
+    console.log(ratio, int(getWidth(width).float * ratio))
+    canvas.width = int(getWidth(width).float * ratio)
+    canvas.height = int(getHeight(height).float * ratio)
+    canvas.style.width = $getWidth(width) & "px"
+    canvas.style.height = $getHeight(height) & "px"
+    context.setTransform(ratio, 0, 0, ratio, 0, 0)
 
   result = Renderer2D(
     canvas: canvas,
