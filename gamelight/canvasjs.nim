@@ -21,11 +21,13 @@ type
 {.push importcpp.}
 
 proc getContext*(canvasElement: Element, contextType: cstring,
-    contextAttributes = ContextAttributes(alpha: true)): CanvasRenderingContext
+    contextAttributes = ContextAttributes(alpha: false)): CanvasRenderingContext
 
 proc fillRect*(context: CanvasRenderingContext,
     x, y, width, height: int)
 
+proc strokeRect*(context: CanvasRenderingContext,
+    x, y, width, height: int)
 
 proc beginPath*(context: CanvasRenderingContext)
 

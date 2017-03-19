@@ -106,6 +106,13 @@ proc parallelWith*(line: LineSegment, direction: Direction): bool =
 
   assert false, "We only support lines which are parallel to the x or y-axis."
 
+proc toPoint*(direction: Direction): Point =
+  case direction
+  of dirNorth: (0, -1)
+  of dirEast: (1, 0)
+  of dirSouth: (0, 1)
+  of dirWest: (-1, 0)
+
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 
