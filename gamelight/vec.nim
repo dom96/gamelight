@@ -1,10 +1,13 @@
 import math
 type
-  Point* = object
-    x*, y*: int
+  Point*[T] = object
+    x*, y*: T
 
-converter toPoint*(point: (int, int)): Point =
-  Point(x: point[0], y: point[1])
+converter toPoint*(point: (int, int)): Point[int] =
+  Point[int](x: point[0], y: point[1])
+
+converter toPoint*(point: (float, float)): Point[float] =
+  Point[float](x: point[0], y: point[1])
 
 proc `+`*(point: Point, point2: Point): Point =
   (point.x + point2.x, point.y + point2.y)
@@ -15,11 +18,11 @@ proc `-`*(point: Point, point2: Point): Point =
 proc `-`*(point: Point): Point =
   (-point.x, -point.y)
 
-proc `/`*(point: Point, scalar: int): Point =
-  (int(point.x / scalar), int(point.y / scalar))
+proc `/`*[T](point: Point[T], scalar: T): Point[T] =
+  (T(point.x / scalar), T(point.y / scalar))
 
-proc `*`*(point: Point, scalar: int): Point =
-  (int(point.x * scalar), int(point.y * scalar))
+proc `*`*[T](point: Point[T], scalar: T): Point[T] =
+  (T(point.x * scalar), T(point.y * scalar))
 
 proc add*(point: var Point, value: Point) =
   point.x += value.x
@@ -42,3 +45,6 @@ proc rotate*(point: Point, radians: float): Point =
 
 proc midpoint*(point, point2: Point): Point =
   return ((point.x + point2.x) div 2, (point.y + point2.y) div 2)
+
+converter toPointF*(point: Point[int]): Point[float] =
+  return Point[float](x: point.x.float, y: point.y.float)

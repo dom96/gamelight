@@ -91,12 +91,12 @@ proc strokeLines*(renderer: Renderer2D, points: seq[Point], width = 1,
 
   renderer.context.shadowBlur = 0
 
-proc fillRect*(renderer: Renderer2D, x, y, width, height: int,
+proc fillRect*(renderer: Renderer2D, x, y, width, height: int | float,
     style = "#000000") =
   renderer.context.fillStyle = style
   renderer.context.fillRect(x, y, width, height)
 
-proc strokeRect*(renderer: Renderer2D, x, y, width, height: int,
+proc strokeRect*(renderer: Renderer2D, x, y, width, height: int | float,
     style = "#000000", lineWidth = 1) =
   renderer.context.strokeStyle = style
   renderer.context.lineWidth = lineWidth

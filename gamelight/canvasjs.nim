@@ -38,10 +38,10 @@ proc getContext*(canvasElement: Element, contextType: cstring,
     contextAttributes = ContextAttributes(alpha: false)): CanvasRenderingContext
 
 proc fillRect*(context: CanvasRenderingContext,
-    x, y, width, height: int)
+    x, y, width, height: int | float)
 
 proc strokeRect*(context: CanvasRenderingContext,
-    x, y, width, height: int)
+    x, y, width, height: int | float)
 
 proc beginPath*(context: CanvasRenderingContext)
 
@@ -51,7 +51,7 @@ proc lineTo*(context: CanvasRenderingContext, x, y: int)
 
 proc stroke*(context: CanvasRenderingContext)
 
-proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int)
+proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float)
 
 proc translate*(context: CanvasRenderingContext, x, y: int)
 

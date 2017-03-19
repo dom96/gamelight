@@ -5,13 +5,14 @@ type
   Direction* = enum
     dirNorth, dirEast, dirSouth, dirWest
 
-  LineSegment* = tuple[start, finish: Point]
-  Rect* = tuple[left, top, width, height: int]
+  LineSegment*[T] = tuple[start, finish: Point[T]]
+  Rect*[T] = tuple[left, top, width, height: T]
 
-converter toLineSegment*(x: tuple[start, finish: (int, int)]): LineSegment =
+converter toLineSegment*(x: tuple[start, finish: (int, int)]): LineSegment[int] =
   return (x.start.toPoint, x.finish.toPoint)
 
-converter toLineSegment*(x: tuple[start: (int, int), finish: Point]): LineSegment =
+converter toLineSegment*(x: tuple[start: (int, int),
+                                  finish: Point[int]]): LineSegment[int] =
   return (x.start.toPoint, x.finish)
 
 proc intersect*(line1, line2: LineSegment, point: var Point,
@@ -40,8 +41,8 @@ proc intersect*(line1, line2: LineSegment, point: var Point,
     point.y = int(y1.float + (mua * float(y2 - y1)))
     return true
 
-proc intersect*(line1, line2: LineSegment, epsilon = 0.001): bool =
-  var foo: Point
+proc intersect*[T](line1, line2: LineSegment[T], epsilon = 0.001): bool =
+  var foo: Point[T]
   return intersect(line1, line2, foo, epsilon)
 
 proc intersect*(rect: Rect, p: Point): bool =
@@ -106,12 +107,12 @@ proc parallelWith*(line: LineSegment, direction: Direction): bool =
 
   assert false, "We only support lines which are parallel to the x or y-axis."
 
-proc toPoint*(direction: Direction): Point =
+proc toPoint*[T](direction: Direction): Point[T] =
   case direction
-  of dirNorth: (0, -1)
-  of dirEast: (1, 0)
-  of dirSouth: (0, 1)
-  of dirWest: (-1, 0)
+  of dirNorth: Point[T]((0.T, -1.T))
+  of dirEast: Point[T]((1.T, 0.T))
+  of dirSouth: Point[T]((0.T, 1.T))
+  of dirWest: Point[T]((-1.T, 0.T))
 
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
