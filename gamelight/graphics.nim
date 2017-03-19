@@ -41,7 +41,6 @@ proc newRenderer2D*(id: string, width = -1, height = -1,
   var context = canvas.getContext("2d")
   if hidpi:
     let ratio = getPixelRatio()
-    console.log(ratio, int(getWidth(width).float * ratio))
     canvas.width = int(getWidth(width).float * ratio)
     canvas.height = int(getHeight(height).float * ratio)
     canvas.style.width = $getWidth(width) & "px"
@@ -117,3 +116,23 @@ proc getWidth*(renderer: Renderer2D): int =
 
 proc getHeight*(renderer: Renderer2D): int =
   renderer.canvas.height
+
+proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
+                        style="#000000", font="12px Helvetica"): Element =
+  ## This procedure allows you to draw crisp text on your canvas.
+  ##
+  ## Note that this creates a new DOM element which you should keep. If you
+  ## need the text to move or its contents modified then use the `style`
+  ## and `innerHTML` setters.
+  let p = document.createElement("p")
+  p.innerHTML = text
+  p.style.position = "absolute"
+  p.style.top = "0"
+  p.style.margin = "0"
+  p.style.marginLeft = $pos.x & "px"
+  p.style.marginTop = $pos.y & "px"
+  p.style.font = font
+  p.style.color = style
+
+  renderer.canvas.parentNode.insertBefore(p, renderer.canvas)
+  return p
