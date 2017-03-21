@@ -18,6 +18,11 @@ type
     alpha* {.importc.}: bool
     # TODO: WebGL
 
+  ImageData* = ref object
+    data*: seq[byte]
+    width*, height*: int
+
+
 proc getPixelRatio*(): float =
   # Based on: http://stackoverflow.com/a/15666143/492186
   {.emit: """
@@ -57,3 +62,6 @@ proc translate*(context: CanvasRenderingContext, x, y: int)
 
 proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
 
+proc createImageData*(context: CanvasRenderingContext, width, height: int): ImageData
+
+proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: int)

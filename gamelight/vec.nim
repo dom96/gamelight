@@ -46,5 +46,8 @@ proc rotate*(point: Point, radians: float): Point =
 proc midpoint*(point, point2: Point): Point =
   return ((point.x + point2.x) div 2, (point.y + point2.y) div 2)
 
+proc abs*(point: Point): Point =
+  return (point.x.abs, point.y.abs)
+
 converter toPointF*(point: Point[int]): Point[float] =
   return Point[float](x: point.x.float, y: point.y.float)

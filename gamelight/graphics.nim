@@ -1,4 +1,4 @@
-import future
+import future, colors
 import dom, jsconsole
 import canvasjs, vec
 
@@ -136,3 +136,17 @@ proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
 
   renderer.canvas.parentNode.insertBefore(p, renderer.canvas)
   return p
+
+proc `[]=`*(renderer: Renderer2D, pos: (int, int) | (float, float),
+            color: Color) =
+  let image = renderer.context.createImageData(1, 1)
+  let (r, g, b) = color.extractRGB()
+  image.data[0] = r
+  image.data[1] = g
+  image.data[2] = b
+  image.data[3] = 255
+
+  renderer.context.putImageData(image, pos[0], pos[1])
+
+proc `[]=`*(renderer: Renderer2D, pos: Point, color: Color) =
+  renderer[(pos.x, pos.y)] = color
