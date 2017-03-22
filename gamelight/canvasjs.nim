@@ -60,8 +60,10 @@ proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float
 
 proc translate*(context: CanvasRenderingContext, x, y: int)
 
+proc rotate*(context: CanvasRenderingContext, angle: float)
+
 proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
 
 proc createImageData*(context: CanvasRenderingContext, width, height: int): ImageData
 
-proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: int)
+proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: int | float)

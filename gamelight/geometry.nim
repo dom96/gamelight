@@ -114,6 +114,13 @@ proc toPoint*[T](direction: Direction): Point[T] =
   of dirSouth: Point[T]((0.T, 1.T))
   of dirWest: Point[T]((-1.T, 0.T))
 
+proc angle*(direction: Direction): float =
+  case direction
+  of dirNorth: 270 * PI / 180
+  of dirEast: 0
+  of dirSouth: 90 * PI / 180
+  of dirWest: 180 * PI / 180
+
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 

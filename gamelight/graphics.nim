@@ -1,4 +1,4 @@
-import future, colors
+import future, colors, math
 import dom, jsconsole
 import canvasjs, vec
 
@@ -8,6 +8,7 @@ type
     context: CanvasRenderingContext
     preferredWidth: int
     preferredHeight: int
+    rotation: float
 
 proc getWidth(preferredWidth: int): int =
   if preferredWidth == -1:
@@ -150,3 +151,8 @@ proc `[]=`*(renderer: Renderer2D, pos: (int, int) | (float, float),
 
 proc `[]=`*(renderer: Renderer2D, pos: Point, color: Color) =
   renderer[(pos.x, pos.y)] = color
+
+proc setRotation*(renderer: Renderer2D, rotation: float) =
+  ## Sets the current renderer surface rotation to the specified radians value.
+  renderer.context.rotate((PI - renderer.rotation) + rotation)
+  renderer.rotation = rotation

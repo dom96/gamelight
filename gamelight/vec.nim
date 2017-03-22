@@ -3,6 +3,8 @@ type
   Point*[T] = object
     x*, y*: T
 
+proc getOrigin(): Point[int] = Point[int](x: 0, y: 0)
+
 converter toPoint*(point: (int, int)): Point[int] =
   Point[int](x: point[0], y: point[1])
 
@@ -37,11 +39,18 @@ proc distanceSquared*(point, point2: Point): int =
 proc isOrigin*(point: Point): bool =
   return point.x == 0 and point.y == 0
 
-proc rotate*(point: Point, radians: float): Point =
+proc rotate*[T](point: Point[T], radians: float,
+                origin: Point[T] = getOrigin()): Point[T] =
   let ca = cos(radians)
   let sa = sin(radians)
-  return Point(x: int(ca*point.x.float - sa*point.y.float),
-      y: int(sa*point.x.float + ca*point.y.float))
+
+  let xTrans = (point.x - origin.x)
+  let yTrans = (point.y - origin.y)
+
+  result = Point[T](
+    x: ((xTrans * ca) - (yTrans * sa)) + origin.x,
+    y: ((xTrans * sa) + (yTrans * ca)) + origin.y
+  )
 
 proc midpoint*(point, point2: Point): Point =
   return ((point.x + point2.x) div 2, (point.y + point2.y) div 2)
