@@ -147,7 +147,7 @@ proc `[]=`*(renderer: Renderer2D, pos: (int, int) | (float, float),
   image.data[2] = b
   image.data[3] = 255
 
-  renderer.context.putImageData(image, pos[0], pos[1])
+  renderer.context.putImageData(image, round(pos[0]), round(pos[1]))
 
 proc `[]=`*(renderer: Renderer2D, pos: Point, color: Color) =
   renderer[(pos.x, pos.y)] = color
