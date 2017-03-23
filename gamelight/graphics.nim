@@ -128,7 +128,6 @@ proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
   let p = document.createElement("p")
   p.innerHTML = text
   p.style.position = "absolute"
-  p.style.top = "0"
   p.style.margin = "0"
   p.style.marginLeft = $pos.x & "px"
   p.style.marginTop = $pos.y & "px"
