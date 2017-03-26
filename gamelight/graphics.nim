@@ -118,6 +118,12 @@ proc getWidth*(renderer: Renderer2D): int =
 proc getHeight*(renderer: Renderer2D): int =
   renderer.canvas.height
 
+proc setPosition(element: Element, pos: Point) =
+  element.style.position = "absolute"
+  element.style.margin = "0"
+  element.style.marginLeft = $pos.x & "px"
+  element.style.marginTop = $pos.y & "px"
+
 proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
                         style="#000000", font="12px Helvetica"): Element =
   ## This procedure allows you to draw crisp text on your canvas.
@@ -127,15 +133,29 @@ proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
   ## and `innerHTML` setters.
   let p = document.createElement("p")
   p.innerHTML = text
-  p.style.position = "absolute"
-  p.style.margin = "0"
-  p.style.marginLeft = $pos.x & "px"
-  p.style.marginTop = $pos.y & "px"
+  setPosition(p, pos)
   p.style.font = font
   p.style.color = style
 
   renderer.canvas.parentNode.insertBefore(p, renderer.canvas)
   return p
+
+proc createTextBox*(renderer: Renderer2D, pos: Point): Element =
+  let input = document.createElement("input")
+  input.EmbedElement.`type` = "text"
+  setPosition(input, pos)
+
+  renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
+  return input.OptionElement
+
+proc createButton*(renderer: Renderer2D, pos: Point, text: string): Element =
+  let input = document.createElement("input")
+  input.EmbedElement.`type` = "button"
+  input.OptionElement.value = text
+  setPosition(input, pos)
+
+  renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
+  return input.OptionElement
 
 proc `[]=`*(renderer: Renderer2D, pos: (int, int) | (float, float),
             color: Color) =
