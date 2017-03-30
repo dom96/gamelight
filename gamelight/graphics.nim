@@ -15,6 +15,7 @@ type
   PositionedElement = ref object
     originalLeft, originalTop: float
     originalFontSize: float
+    originalWidth, originalHeight: float
     element: Element
 
 const
@@ -65,8 +66,12 @@ proc resizeCanvas(renderer: Renderer2D) =
       element.style.marginTop =
         $(item.originalTop * minRatio) & "px"
 
-      if item.originalFontSize != 0.0:
+      if item.originalFontSize > 0.0:
         element.style.fontSize = $(item.originalFontSize * minRatio) & "px"
+      if item.originalWidth > 0.0:
+        element.style.width = $(item.originalWidth * minRatio) & "px"
+      if item.originalHeight > 0.0:
+        element.style.height = $(item.originalHeight * minRatio) & "px"
 
 proc newRenderer2D*(id: string, width = -1, height = -1,
                     hidpi = false): Renderer2D =
@@ -161,23 +166,33 @@ proc getWidth*(renderer: Renderer2D): int =
 proc getHeight*(renderer: Renderer2D): int =
   renderer.canvas.height
 
-proc setPosition(renderer: Renderer2D, element: Element, pos: Point) =
+proc setProperties(renderer: Renderer2D, element: Element, pos: Point,
+                   width, height, fontSize: float) =
   element.style.position = "absolute"
   element.style.margin = "0"
   element.style.marginLeft = $pos.x & "px"
   element.style.marginTop = $pos.y & "px"
+  element.style.fontSize = $fontSize & "px"
+  if width >= 0.0:
+    element.style.width = $width & "px"
+
+  if height >= 0.0:
+    element.style.height = $height & "px"
 
   element.classList.add(positionedElementCssClass)
   renderer.positionedElements.add(PositionedElement(
     originalLeft: pos.x,
     originalTop: pos.y,
-    element: element
+    element: element,
+    originalFontSize: fontSize,
+    originalWidth: width,
+    originalHeight: height
   ))
   resizeCanvas(renderer)
 
 proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
                         style="#000000", fontSize=12.0,
-                        fontFamily="Helvetica"): Element =
+                        fontFamily="Helvetica", width = -1.0): Element =
   ## This procedure allows you to draw crisp text on your canvas.
   ##
   ## Note that this creates a new DOM element which you should keep. If you
@@ -188,27 +203,31 @@ proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
   ## ``scaleToScreen`` option.
   let p = document.createElement("p")
   p.innerHTML = text
-  renderer.setPosition(p, pos)
-  renderer.positionedElements[^1].originalFontSize = fontSize
-  p.style.font = $fontSize & "px " & fontFamily
+  renderer.setProperties(p, pos, width, 0.0, fontSize)
+
+  p.style.fontFamily = fontFamily
   p.style.color = style
 
   renderer.canvas.parentNode.insertBefore(p, renderer.canvas)
   return p
 
-proc createTextBox*(renderer: Renderer2D, pos: Point): Element =
+proc createTextBox*(renderer: Renderer2D, pos: Point, width = -1.0,
+                    height = -1.0, fontSize = 12.0): Element =
   let input = document.createElement("input")
   input.EmbedElement.`type` = "text"
-  renderer.setPosition(input, pos)
+  renderer.setProperties(input, pos, width, height, fontSize)
 
   renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
   return input.OptionElement
 
-proc createButton*(renderer: Renderer2D, pos: Point, text: string): Element =
+proc createButton*(renderer: Renderer2D, pos: Point, text: string,
+                   width = -1.0, height = -1.0, fontSize = 12.0,
+                   fontFamily = "Helvetica"): Element =
   let input = document.createElement("input")
   input.EmbedElement.`type` = "button"
   input.OptionElement.value = text
-  renderer.setPosition(input, pos)
+  renderer.setProperties(input, pos, width, height, fontSize)
+  input.style.fontFamily = fontFamily
 
   renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
   return input.OptionElement
