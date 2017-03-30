@@ -9,6 +9,16 @@ type
     preferredWidth: int
     preferredHeight: int
     rotation: float
+    scaleToScreen: bool
+    positionedElements: seq[PositionedElement]
+
+  PositionedElement = ref object
+    originalLeft, originalTop: float
+    originalFontSize: float
+    element: Element
+
+const
+  positionedElementCssClass = "gamelight-graphics-element"
 
 proc getWidth(preferredWidth: int): int =
   if preferredWidth == -1:
@@ -26,6 +36,37 @@ proc resizeCanvas(renderer: Renderer2D) =
   renderer.canvas.width = getWidth(renderer.preferredWidth)
 
   renderer.canvas.height = getHeight(renderer.preferredHeight)
+
+  if renderer.scaleToScreen:
+    console.log("Scaling to screen")
+    let screenWidth = window.screen.availWidth
+    let screenHeight = window.screen.availHeight
+    let ratioX = screenWidth / renderer.canvas.width # 1.6  ... 0.9
+    let ratioY = screenHeight / renderer.canvas.height # 2 ... 3.5
+
+    let minRatio = min(ratioX, ratioY)
+    let scaledWidth = renderer.canvas.width.float * minRatio
+    let scaledHeight = renderer.canvas.height.float * minRatio
+    renderer.canvas.style.width = $scaledWidth & "px"
+    renderer.canvas.style.height = $scaledHeight & "px"
+
+    # Ensure the parent container has the correct styles.
+    renderer.canvas.parentNode.style.position = "absolute"
+    renderer.canvas.parentNode.style.left = "0"
+    renderer.canvas.parentNode.style.top = "0"
+    renderer.canvas.parentNode.style.width = $screenWidth & "px"
+    renderer.canvas.parentNode.style.height = $screenHeight & "px"
+
+    # Go through each element and adjust its position.
+    for item in renderer.positionedElements:
+      let element = item.element
+      element.style.marginLeft =
+        $(item.originalLeft * minRatio) & "px"
+      element.style.marginTop =
+        $(item.originalTop * minRatio) & "px"
+
+      if item.originalFontSize != 0.0:
+        element.style.fontSize = $(item.originalFontSize * minRatio) & "px"
 
 proc newRenderer2D*(id: string, width = -1, height = -1,
                     hidpi = false): Renderer2D =
@@ -52,7 +93,9 @@ proc newRenderer2D*(id: string, width = -1, height = -1,
     canvas: canvas,
     context: context,
     preferredWidth: width,
-    preferredHeight: height
+    preferredHeight: height,
+    scaleToScreen: true,
+    positionedElements: @[]
   )
 
   var capturedResult = result
@@ -118,23 +161,36 @@ proc getWidth*(renderer: Renderer2D): int =
 proc getHeight*(renderer: Renderer2D): int =
   renderer.canvas.height
 
-proc setPosition(element: Element, pos: Point) =
+proc setPosition(renderer: Renderer2D, element: Element, pos: Point) =
   element.style.position = "absolute"
   element.style.margin = "0"
   element.style.marginLeft = $pos.x & "px"
   element.style.marginTop = $pos.y & "px"
 
+  element.classList.add(positionedElementCssClass)
+  renderer.positionedElements.add(PositionedElement(
+    originalLeft: pos.x,
+    originalTop: pos.y,
+    element: element
+  ))
+  resizeCanvas(renderer)
+
 proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
-                        style="#000000", font="12px Helvetica"): Element =
+                        style="#000000", fontSize=12.0,
+                        fontFamily="Helvetica"): Element =
   ## This procedure allows you to draw crisp text on your canvas.
   ##
   ## Note that this creates a new DOM element which you should keep. If you
   ## need the text to move or its contents modified then use the `style`
   ## and `innerHTML` setters.
+  ##
+  ## **Warning:** Movement will fail if the canvas is scaled via the
+  ## ``scaleToScreen`` option.
   let p = document.createElement("p")
   p.innerHTML = text
-  setPosition(p, pos)
-  p.style.font = font
+  renderer.setPosition(p, pos)
+  renderer.positionedElements[^1].originalFontSize = fontSize
+  p.style.font = $fontSize & "px " & fontFamily
   p.style.color = style
 
   renderer.canvas.parentNode.insertBefore(p, renderer.canvas)
@@ -143,7 +199,7 @@ proc createTextElement*(renderer: Renderer2D, text: string, pos: Point,
 proc createTextBox*(renderer: Renderer2D, pos: Point): Element =
   let input = document.createElement("input")
   input.EmbedElement.`type` = "text"
-  setPosition(input, pos)
+  renderer.setPosition(input, pos)
 
   renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
   return input.OptionElement
@@ -152,7 +208,7 @@ proc createButton*(renderer: Renderer2D, pos: Point, text: string): Element =
   let input = document.createElement("input")
   input.EmbedElement.`type` = "button"
   input.OptionElement.value = text
-  setPosition(input, pos)
+  renderer.setPosition(input, pos)
 
   renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
   return input.OptionElement
