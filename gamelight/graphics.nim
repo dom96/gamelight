@@ -48,8 +48,14 @@ proc resizeCanvas(renderer: Renderer2D) =
     let minRatio = min(ratioX, ratioY)
     let scaledWidth = renderer.canvas.width.float * minRatio
     let scaledHeight = renderer.canvas.height.float * minRatio
+
+    let left = (screenWidth.float - scaledWidth) / 2
+    let top = (screenHeight.float - scaledHeight) / 2
+
     renderer.canvas.style.width = $scaledWidth & "px"
     renderer.canvas.style.height = $scaledHeight & "px"
+    renderer.canvas.style.marginLeft = $left & "px"
+    renderer.canvas.style.marginTop = $top & "px"
 
     # Ensure the parent container has the correct styles.
     renderer.canvas.parentNode.style.position = "absolute"
@@ -62,9 +68,9 @@ proc resizeCanvas(renderer: Renderer2D) =
     for item in renderer.positionedElements:
       let element = item.element
       element.style.marginLeft =
-        $(item.originalLeft * minRatio) & "px"
+        $(item.originalLeft * minRatio + left) & "px"
       element.style.marginTop =
-        $(item.originalTop * minRatio) & "px"
+        $(item.originalTop * minRatio + top) & "px"
 
       if item.originalFontSize > 0.0:
         element.style.fontSize = $(item.originalFontSize * minRatio) & "px"
