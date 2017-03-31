@@ -99,7 +99,7 @@ proc newRenderer2D*(id: string, width = -1, height = -1,
     context: context,
     preferredWidth: width,
     preferredHeight: height,
-    scaleToScreen: true,
+    scaleToScreen: false,
     positionedElements: @[]
   )
 
@@ -250,3 +250,16 @@ proc setRotation*(renderer: Renderer2D, rotation: float) =
   ## Sets the current renderer surface rotation to the specified radians value.
   renderer.context.rotate((PI - renderer.rotation) + rotation)
   renderer.rotation = rotation
+
+proc setScaleToScreen*(renderer: Renderer2D, value: bool) =
+  ## When set to ``true`` this property will scale the renderer's canvas to
+  ## fit the device's screen. Elements created using the procedures defined
+  ## in this module will also be handled, every object will be resized by
+  ## either the ratio of screen width to canvas width or screen height to
+  ## canvas height, whichever one is smallest.
+  renderer.scaleToScreen = value
+
+  renderer.resizeCanvas()
+
+proc getScaleToScreen*(renderer: Renderer2D): bool =
+  renderer.scaleToScreen
