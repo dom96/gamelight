@@ -40,8 +40,8 @@ proc resizeCanvas(renderer: Renderer2D) =
 
   if renderer.scaleToScreen:
     console.log("Scaling to screen")
-    let screenWidth = window.screen.availWidth
-    let screenHeight = window.screen.availHeight
+    let screenWidth = window.innerWidth
+    let screenHeight = window.innerHeight
     let ratioX = screenWidth / renderer.canvas.width # 1.6  ... 0.9
     let ratioY = screenHeight / renderer.canvas.height # 2 ... 3.5
 
