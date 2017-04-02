@@ -63,6 +63,7 @@ proc resizeCanvas(renderer: Renderer2D) =
     renderer.canvas.parentNode.style.top = "0"
     renderer.canvas.parentNode.style.width = $screenWidth & "px"
     renderer.canvas.parentNode.style.height = $screenHeight & "px"
+    renderer.canvas.parentNode.Element.classList.add("fullscreen")
 
     # Go through each element and adjust its position.
     for item in renderer.positionedElements:
