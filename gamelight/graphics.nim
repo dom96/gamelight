@@ -42,8 +42,14 @@ proc resizeCanvas(renderer: Renderer2D) =
     console.log("Scaling to screen")
     let screenWidth = window.innerWidth
     let screenHeight = window.innerHeight
-    let ratioX = screenWidth / renderer.canvas.width # 1.6  ... 0.9
-    let ratioY = screenHeight / renderer.canvas.height # 2 ... 3.5
+    let ratioX = screenWidth / renderer.canvas.width
+    let ratioY = screenHeight / renderer.canvas.height
+
+    # We also grab the current zoom ratio. This is necessary when the user
+    # zooms accidentally, or the OS zooms for them (when keyboard shows up on
+    # iOS for example)
+    # Ref: http://stackoverflow.com/a/11797565/492186
+    let zoomRatio = document.body.clientWidth / window.innerWidth
 
     let minRatio = min(ratioX, ratioY)
     let scaledWidth = renderer.canvas.width.float * minRatio
@@ -79,6 +85,8 @@ proc resizeCanvas(renderer: Renderer2D) =
         element.style.width = $(item.originalWidth * minRatio) & "px"
       if item.originalHeight > 0.0:
         element.style.height = $(item.originalHeight * minRatio) & "px"
+
+    window.scrollTo(0, 0)
 
 proc newRenderer2D*(id: string, width = -1, height = -1,
                     hidpi = false): Renderer2D =
