@@ -33,6 +33,39 @@ proc getHeight(preferredHeight: int): int =
   else:
     preferredHeight
 
+template getScalingFactors() =
+  let screenWidth {.inject.} = window.innerWidth
+  let screenHeight {.inject.} = window.innerHeight
+  let ratioX = screenWidth / renderer.canvas.width
+  let ratioY = screenHeight / renderer.canvas.height
+
+  # We also grab the current zoom ratio. This is necessary when the user
+  # zooms accidentally, or the OS zooms for them (when keyboard shows up on
+  # iOS for example)
+  # Ref: http://stackoverflow.com/a/11797565/492186
+  let zoomRatio = document.body.clientWidth / window.innerWidth
+
+  let minRatio {.inject.} = min(ratioX, ratioY)
+  let scaledWidth {.inject.} = renderer.canvas.width.float * minRatio
+  let scaledHeight {.inject.} = renderer.canvas.height.float * minRatio
+
+  let left {.inject.} = (screenWidth.float - scaledWidth) / 2
+  let top {.inject.} = (screenHeight.float - scaledHeight) / 2
+
+proc scale*[T](renderer: Renderer2D, pos: Point[T]): Point[T] =
+  ## Scales the specified ``Point[T]`` by the scaling factor, if the
+  ## ``scaleToScreen`` option is enabled, otherwise just returns ``pos``.
+  ##
+  ## Note: This does not convert the point into screen coordinates, it assumes
+  ## the point will be used on the canvas. So (0, 0) is the top of the canvas.
+  if renderer.scaleToScreen:
+    getScalingFactors()
+
+    return (T(pos.x.float * minRatio),
+            T(pos.y.float * minRatio))
+  else:
+    return pos
+
 proc resizeCanvas(renderer: Renderer2D) =
   renderer.canvas.width = getWidth(renderer.preferredWidth)
 
@@ -40,23 +73,7 @@ proc resizeCanvas(renderer: Renderer2D) =
 
   if renderer.scaleToScreen:
     console.log("Scaling to screen")
-    let screenWidth = window.innerWidth
-    let screenHeight = window.innerHeight
-    let ratioX = screenWidth / renderer.canvas.width
-    let ratioY = screenHeight / renderer.canvas.height
-
-    # We also grab the current zoom ratio. This is necessary when the user
-    # zooms accidentally, or the OS zooms for them (when keyboard shows up on
-    # iOS for example)
-    # Ref: http://stackoverflow.com/a/11797565/492186
-    let zoomRatio = document.body.clientWidth / window.innerWidth
-
-    let minRatio = min(ratioX, ratioY)
-    let scaledWidth = renderer.canvas.width.float * minRatio
-    let scaledHeight = renderer.canvas.height.float * minRatio
-
-    let left = (screenWidth.float - scaledWidth) / 2
-    let top = (screenHeight.float - scaledHeight) / 2
+    getScalingFactors()
 
     renderer.canvas.style.width = $scaledWidth & "px"
     renderer.canvas.style.height = $scaledHeight & "px"
