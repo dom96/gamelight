@@ -60,3 +60,8 @@ proc abs*(point: Point): Point =
 
 converter toPointF*(point: Point[int]): Point[float] =
   return Point[float](x: point.x.float, y: point.y.float)
+
+proc angle*(point: Point): float =
+  let degrees = radToDeg(arctan2(point.y.float64, point.x.float64))
+  # https://stackoverflow.com/a/25725005/492186
+  return (degrees + 360) mod 360

@@ -22,6 +22,13 @@ type
     data*: seq[byte]
     width*, height*: int
 
+  Image* = ref object
+    src*: cstring
+    height*: int
+    width*: int
+    onload*: proc ()
+
+proc newImage*(): Image {.importcpp: "new Image()".}
 
 proc getPixelRatio*(): float =
   # Based on: http://stackoverflow.com/a/15666143/492186
@@ -50,20 +57,28 @@ proc strokeRect*(context: CanvasRenderingContext,
 
 proc beginPath*(context: CanvasRenderingContext)
 
-proc moveTo*(context: CanvasRenderingContext, x, y: int)
+proc moveTo*(context: CanvasRenderingContext, x, y: int | float)
 
-proc lineTo*(context: CanvasRenderingContext, x, y: int)
+proc lineTo*(context: CanvasRenderingContext, x, y: int | float)
 
 proc stroke*(context: CanvasRenderingContext)
 
 proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float)
 
-proc translate*(context: CanvasRenderingContext, x, y: int)
+proc translate*(context: CanvasRenderingContext, x, y: int | float)
 
 proc rotate*(context: CanvasRenderingContext, angle: float)
 
 proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
 
-proc createImageData*(context: CanvasRenderingContext, width, height: int): ImageData
+proc createImageData*(context: CanvasRenderingContext, width, height: int | float): ImageData
 
 proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: int | float)
+
+proc save*(context: CanvasRenderingContext)
+
+proc restore*(context: CanvasRenderingContext)
+
+proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy: int | float)
+
+proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy, dWidth, dHeight: int | float)

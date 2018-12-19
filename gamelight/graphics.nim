@@ -1,4 +1,4 @@
-import future, colors, math
+import sugar, colors, math, tables
 import dom, jsconsole
 import canvasjs, vec
 
@@ -11,6 +11,7 @@ type
     rotation: float
     scaleToScreen: bool
     positionedElements: seq[PositionedElement]
+    images: Table[string, Image]
 
   PositionedElement = ref object
     originalLeft, originalTop: float
@@ -132,7 +133,8 @@ proc newRenderer2D*(id: string, width = -1, height = -1,
     preferredWidth: width,
     preferredHeight: height,
     scaleToScreen: false,
-    positionedElements: @[]
+    positionedElements: @[],
+    images: initTable[string, Image]()
   )
 
   var capturedResult = result
@@ -295,3 +297,41 @@ proc setScaleToScreen*(renderer: Renderer2D, value: bool) =
 
 proc getScaleToScreen*(renderer: Renderer2D): bool =
   renderer.scaleToScreen
+
+type
+  ImageAlignment* = enum
+    Center, TopLeft
+
+proc adjustPos(width, height: int, pos: Point, align: ImageAlignment): Point =
+  result = pos
+  case align
+  of Center:
+    result = Point(
+      x: result.x - (width / 2),
+      y: result.y - (height / 2)
+    )
+  of TopLeft:
+    discard
+
+proc drawImage*(
+  renderer: Renderer2D, url: string, pos: Point, width, height: int,
+  align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
+) =
+  assert width != 0 and height != 0
+  let pos = adjustPos(width, height, pos, align)
+  renderer.context.save()
+  renderer.context.translate(pos.x + width / 2, pos.y + height / 2)
+  renderer.context.rotate(degToRad(degrees))
+  renderer.context.translate(-pos.x - width / 2, -pos.y - height / 2)
+  if url in renderer.images:
+    let img = renderer.images[url]
+    renderer.context.drawImage(img, pos.x, pos.y, width, height)
+  else:
+    let img = newImage()
+    img.src = url
+    img.onload =
+      proc () =
+        renderer.context.drawImage(img, pos.x, pos.y, width, height)
+    renderer.images[url] = img
+
+  renderer.context.restore()
