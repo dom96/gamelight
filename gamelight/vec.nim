@@ -39,7 +39,7 @@ proc add*(point: var Point, value: Point) =
 proc copy*(point: Point): Point =
   return Point(x: point.x, y: point.y)
 
-proc distanceSquared*(point, point2: Point): int =
+proc distanceSquared*[T](point, point2: Point[T]): T =
   return (point2.x - point.x)^2 + (point2.y - point.y)^2
 
 proc isOrigin*(point: Point): bool =
