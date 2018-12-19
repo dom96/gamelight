@@ -17,6 +17,12 @@ proc `+`*(point: Point, point2: Point): Point =
 proc `-`*(point: Point, point2: Point): Point =
   (point.x - point2.x, point.y - point2.y)
 
+proc `+`*[T](point: Point[T], scalar: T): Point[T] =
+  (point.x + scalar, point.y + scalar)
+
+proc `-`*[T](point: Point[T], scalar: T): Point[T] =
+  (point.x - scalar, point.y - scalar)
+
 proc `-`*(point: Point): Point =
   (-point.x, -point.y)
 
