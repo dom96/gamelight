@@ -335,3 +335,11 @@ proc drawImage*(
     renderer.images[url] = img
 
   renderer.context.restore()
+
+proc fillCircle*(
+  renderer: Renderer2D, pos: Point, radius: int | float, style = "#000000"
+) =
+  renderer.context.beginPath()
+  renderer.context.arc(pos.x, pos.y, radius, 0, 2 * math.PI)
+  renderer.context.fillStyle = style
+  renderer.context.fill()

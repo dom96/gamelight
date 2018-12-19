@@ -63,6 +63,8 @@ proc lineTo*(context: CanvasRenderingContext, x, y: int | float)
 
 proc stroke*(context: CanvasRenderingContext)
 
+proc fill*(context: CanvasRenderingContext)
+
 proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float)
 
 proc translate*(context: CanvasRenderingContext, x, y: int | float)
@@ -82,3 +84,5 @@ proc restore*(context: CanvasRenderingContext)
 proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy: int | float)
 
 proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy, dWidth, dHeight: int | float)
+
+proc arc*(context: CanvasRenderingContext, x, y, radius: int | float, startAngle, endAngle: float, anticlockwise=false)
