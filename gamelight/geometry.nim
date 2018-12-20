@@ -7,6 +7,7 @@ type
 
   LineSegment*[T] = tuple[start, finish: Point[T]]
   Rect*[T] = tuple[left, top, width, height: T]
+  Circle*[T] = tuple[pos: Point[T], radius: T]
 
 converter toLineSegment*(x: tuple[start, finish: (int, int)]): LineSegment[int] =
   return (x.start.toPoint, x.finish.toPoint)
@@ -121,6 +122,10 @@ proc angle*(direction: Direction): float =
   of dirSouth: PI / 2 # 90
   of dirWest: PI # 180
 
+proc intersects*(a, b: Circle): bool =
+  # https://stackoverflow.com/a/1736741/492186
+  return distanceSquared(a[0], b[0]) <= (a[1]+b[1])^2
+
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 
@@ -181,5 +186,14 @@ when isMainModule:
     assert(not line2.parallelWith(dirWest))
     assert(line2.parallelWith(dirNorth))
     assert(line2.parallelWith(dirSouth))
+
+  # Circle-circle intersect tests
+  block:
+    let c1 = (Point[int](x: 5, y: 5), 10)
+    let c2 = (Point[int](x: 20, y: 5), 20)
+    doAssert intersects(c1, c2)
+    let c3 = (Point[int](x: 200, y: 5), 20)
+    doAssert(not intersects(c1, c3))
+    doAssert(not intersects(c2, c3))
 
   echo("Tests passed!")
