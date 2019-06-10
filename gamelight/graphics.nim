@@ -5,7 +5,7 @@ import canvasjs, vec
 type
   Renderer2D* = ref object
     canvas: EmbedElement
-    context: CanvasRenderingContext
+    context*: CanvasRenderingContext
     preferredWidth: int
     preferredHeight: int
     rotation: float
@@ -191,8 +191,16 @@ proc fillText*(renderer: Renderer2D, text: string, pos: Point,
   renderer.context.font = font
   renderer.context.fillText(text, pos.x, pos.y)
 
-proc setTranslation*(renderer: Renderer2D, pos: Point) =
-  renderer.context.setTransform(1, 0, 0, 1, pos.x, pos.y)
+proc setTranslation*(renderer: Renderer2D, pos: Point, zoom=1.0) =
+  renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
+
+proc centerOn*(renderer: Renderer2D, pos: Point, zoom=1.0) =
+  renderer.context.translate(-pos.x, -pos.y)
+  renderer.context.scale(zoom, zoom)
+  renderer.context.translate(
+    renderer.canvas.width / 2,
+    renderer.canvas.height / 2
+  )
 
 proc getWidth*(renderer: Renderer2D): int =
   renderer.canvas.width

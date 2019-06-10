@@ -4,8 +4,8 @@ type
   CanvasRenderingContext* = ref object
     fillStyle* {.importc.}: cstring
     strokeStyle* {.importc.}: cstring
-    width* {.importc.}: int
-    height* {.importc.}: int
+    width* {.importc: "canvas.width".}: int
+    height* {.importc: "canvas.height".}: int
 
     shadowColor* {.importc.}: cstring
     shadowBlur* {.importc.}: int
@@ -56,6 +56,7 @@ proc strokeRect*(context: CanvasRenderingContext,
     x, y, width, height: int | float)
 
 proc beginPath*(context: CanvasRenderingContext)
+proc closePath*(context: CanvasRenderingContext)
 
 proc moveTo*(context: CanvasRenderingContext, x, y: int | float)
 
@@ -70,6 +71,8 @@ proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float
 proc translate*(context: CanvasRenderingContext, x, y: int | float)
 
 proc rotate*(context: CanvasRenderingContext, angle: float)
+
+proc scale*(context: CanvasRenderingContext, x, y: float)
 
 proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
 

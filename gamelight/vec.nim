@@ -71,3 +71,7 @@ proc angle*(point: Point): float =
   let degrees = radToDeg(arctan2(point.y.float64, point.x.float64))
   # https://stackoverflow.com/a/25725005/492186
   return (degrees + 360) mod 360
+
+proc normalize*(point: Point): Point =
+  ## Returns a unit vector of ``point``.
+  return point / sqrt(point.x^2 + point.y^2)
