@@ -9,3 +9,5 @@ license       = "MIT"
 
 requires "nim >= 0.16.0"
 
+requires "sdl2"
+
