@@ -376,6 +376,8 @@ when isCanvas:
     renderer.context.fill()
 else:
   # SDL2
+  export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
+
   proc checkError(ret: ptr | SDL_Return) =
     if (when ret is ptr: ret.isNil else: ret != SdlSuccess):
       raise newException(Exception, "SDL2 failure: " & $getError())
@@ -429,7 +431,6 @@ else:
     block eventLoop:
       while true:
         while pollEvent(event):
-          echo(event.kind)
           case event.kind
           of QuitEvent:
             break eventLoop
@@ -464,7 +465,17 @@ else:
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEventObj)) =
     renderer.events[EventKind.KeyDown] =
       proc (event: sdl2.Event) =
-        static:
-          echo(sizeof(sdl2.KeyboardEventObj), sizeof(sdl2.Event))
         let ev = cast[sdl2.KeyboardEventObj](event)
         onKeyDown(ev)
+
+  proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEventObj)) =
+    renderer.events[EventKind.MouseButtonDown] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.MouseButtonEventObj](event)
+        onMouseButtonDown(ev)
+
+  proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEventObj)) =
+    renderer.events[EventKind.MouseMotion] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.MouseMotionEventObj](event)
+        onMouseMotion(ev)
