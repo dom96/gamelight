@@ -474,6 +474,8 @@ else:
     for ev in EventKind:
       result.events[ev] = nil
 
+    discard sdl2.setHint(HINT_RENDER_SCALE_QUALITY, "linear") # TODO: report this?
+
     # var capturedResult = result
     # window.addEventListener("resize",
     #   (ev: Event) => (resizeCanvas(capturedResult)))
@@ -485,6 +487,7 @@ else:
       event = sdl2.defaultEvent
       fpsman: FpsManager
     fpsman.init()
+    fpsman.setFramerate(60)
 
     block eventLoop:
       while true:
@@ -597,6 +600,15 @@ else:
     let color = parseColor(style).extractRGB()
 
     let pos = applyTranslation(renderer, pos)
+    checkError renderer.renderer.aacircleRGBA(
+      pos.x.int16,
+      pos.y.int16,
+      radius.int16,
+      color.r.uint8,
+      color.g.uint8,
+      color.b.uint8,
+      255
+    )
     checkError renderer.renderer.filledCircleRGBA(
       pos.x.int16,
       pos.y.int16,
@@ -645,6 +657,7 @@ else:
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width, height)
     # echo("Render: ", destRect, " ", text)
     checkError sdl2.copy(renderer.renderer, texture, nil, addr destRect)
+    destroy(texture)
 
   # Path drawing
   proc lineTo*(renderer: Renderer2D, x, y: float) =
