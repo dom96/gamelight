@@ -671,7 +671,7 @@ else:
         if i == renderer.currentPath.len-1: 0
         else: i+1
       let first = applyTranslation(renderer, renderer.currentPath[i])
-      let second = applyTranslation(renderer, renderer.currentPath[i])
+      let second = applyTranslation(renderer, renderer.currentPath[next])
       renderer.renderer.thickLineRGBA(
         first.x.int16,
         first.y.int16,
