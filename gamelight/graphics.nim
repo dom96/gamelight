@@ -455,15 +455,11 @@ else:
   proc newRenderer2D*(id: string, width = 640, height = 480,
                       hidpi = false): Renderer2D =
 
-    let window = createWindow(
-      id, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-      width.cint, height.cint, SDL_WINDOW_SHOWN
+    var window: WindowPtr
+    var renderer: RendererPtr
+    checkError createWindowAndRenderer(
+      width.cint, height.cint, SDL_WINDOW_SHOWN, window, renderer
     )
-    let renderer = createRenderer(
-      window, -1,
-      RENDERER_SOFTWARE
-    )
-    checkError renderer
 
     result = Renderer2D(
       window: window,
@@ -514,8 +510,6 @@ else:
         checkError renderer.renderer.clear()
 
         onTick(elapsedTime.float)
-
-        checkError renderer.window.updateSurface()
 
         renderer.renderer.present()
         fpsman.delay
@@ -582,12 +576,10 @@ else:
   proc fillRect*(renderer: Renderer2D, x, y, width, height: int | float,
       style = "#000000") =
     let color = parseColor(style).extractRGB()
-    let surface = renderer.window.getSurface()
-    checkError surface
-    let sdlColor = mapRGB(surface.format, color.r.uint8, color.g.uint8, color.b.uint8)
+    checkError renderer.renderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x, y, width.cint, height.cint)
-    surface.fillRect(addr rect, sdlColor)
+    checkError renderer.renderer.fillRect(addr rect)
 
   proc strokeRect*(renderer: Renderer2D, x, y, width, height: int | float,
       style = "#000000", lineWidth = 1) =
@@ -638,17 +630,20 @@ else:
   proc fillText*(renderer: Renderer2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica") =
     let color = parseColor(style).extractRGB()
-    let winSurface = renderer.window.getSurface()
-    checkError winSurface
-    let sdlColor = sdl2.color(color.r, color.g, color.b, 255)
-
     let font = renderer.loadFont(font)
-    let surface = renderUtf8Blended(font, text, sdlColor)
-    checkError surface
+    let sdlColor = sdl2.color(color.r, color.g, color.b, 0)
 
-    var srcRect = sdl2.rect(0, 0, surface.w, surface.h)
-    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, surface.w, surface.h)
-    blitSurface(src=surface, addr srcRect, winSurface, addr destRect)
+    let textSurface = renderTextSolid(font, text, sdlColor)
+    checkError textSurface
+    let texture = createTextureFromSurface(renderer.renderer, textSurface)
+    let width = textSurface.w
+    let height = textSurface.h
+    freeSurface(textSurface)
+
+    let pos = applyTranslation(renderer, pos)
+    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width, height)
+    # echo("Render: ", destRect, " ", text)
+    checkError sdl2.copy(renderer.renderer, texture, nil, addr destRect)
 
   # Path drawing
   proc lineTo*(renderer: Renderer2D, x, y: float) =
@@ -669,8 +664,6 @@ else:
 
   proc strokePath*(renderer: Renderer2D, style: string, lineWidth: int) =
     let color = parseColor(style).extractRGB()
-    let surface = renderer.window.getSurface()
-    checkError surface
 
     for i in 0 ..< renderer.currentPath.len:
       let next =
@@ -692,7 +685,6 @@ else:
 
   # Viewport functions
   proc scale*(renderer: Renderer2D, x, y: float) =
-    # TODO: Use SDL_RenderSetScale
     renderer.scalingFactor = vec.Point[float](x: x, y: y)
     renderer.renderer.setScale(x, y)
 
