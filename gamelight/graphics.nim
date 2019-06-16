@@ -20,7 +20,7 @@ when isCanvas:
 
 type
   EventKind* = enum
-    KeyDown, MouseButtonDown, MouseMotion
+    KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion
 
 type
   Renderer2D* = ref object
@@ -41,6 +41,10 @@ type
       images: Table[string, Image]
 
 when isCanvas:
+  export KeyboardEvent, MouseEvent, TouchEvent
+  type
+    MouseButtonEvent* = MouseEvent
+    MouseMotionEvent* = MouseEvent
 
   const
     positionedElementCssClass = "gamelight-graphics-element"
@@ -374,6 +378,30 @@ when isCanvas:
     renderer.context.arc(pos.x, pos.y, radius, 0, 2 * math.PI)
     renderer.context.fillStyle = style
     renderer.context.fill()
+
+  proc onFrame(renderer: Renderer2D, frameTime: float, onTick: proc (elapsedTime: float)) =
+    let r = window.requestAnimationFrame((time: float) => onFrame(renderer, time, onTick))
+    let elapsedTime = frameTime - renderer.lastFrameUpdate
+    renderer.lastFrameUpdate = frameTime
+    onTick(elapsedTime)
+
+  proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
+    onFrame(renderer, 0, onTick)
+
+  proc preventDefault*(ev: TouchEvent | MouseEvent | KeyboardEvent) =
+    dom.preventDefault(ev)
+
+  proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEvent)) =
+    window.addEventListener("keydown", (ev: Event) => onKeyDown(ev.KeyboardEvent))
+
+  proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEvent)) =
+    window.addEventListener("mousedown", (ev: Event) => onMouseButtonDown(ev.MouseButtonEvent))
+
+  proc `onMouseButtonUp=`*(renderer: Renderer2D, onMouseButtonUp: proc (event: MouseButtonEvent)) =
+    window.addEventListener("mouseup", (ev: Event) => onMouseButtonUp(ev.MouseButtonEvent))
+
+  proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEvent)) =
+    window.addEventListener("mousemove", (ev: Event) => onMouseMotion(ev.MouseMotionEvent))
 else:
   # SDL2
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
@@ -462,6 +490,11 @@ else:
     destroy renderer.renderer
     destroy renderer.window
 
+  type
+    KeyboardEvent* = KeyboardEventObj
+    MouseButtonEvent* = MouseButtonEventObj
+    MouseMotionEvent* = MouseMotionEventObj
+
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEventObj)) =
     renderer.events[EventKind.KeyDown] =
       proc (event: sdl2.Event) =
@@ -473,6 +506,12 @@ else:
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.MouseButtonEventObj](event)
         onMouseButtonDown(ev)
+
+  proc `onMouseButtonUp=`*(renderer: Renderer2D, onMouseButtonUp: proc (event: MouseButtonEventObj)) =
+    renderer.events[EventKind.MouseButtonUp] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.MouseButtonEventObj](event)
+        onMouseButtonUp(ev)
 
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEventObj)) =
     renderer.events[EventKind.MouseMotion] =
