@@ -29,6 +29,7 @@ type
     when isCanvas:
       canvas: EmbedElement
       context*: CanvasRenderingContext
+      lastFrameUpdate: float
     else:
       window: WindowPtr
       renderer: RendererPtr
@@ -37,7 +38,7 @@ type
       savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
       fontCache: Table[(string, cint), FontPtr]
-    lastFrameUpdate: float
+      lastFrameUpdate: uint64
     preferredWidth: int
     preferredHeight: int
     rotation: float
@@ -505,14 +506,14 @@ else:
               renderer.events[EventKind.MouseMotion](event)
           else: discard
 
-        let frameTime = fpsman.getFramerate() / 1000
-        let elapsedTime = frameTime - renderer.lastFrameUpdate
+        let frameTime = getPerformanceCounter()
+        let elapsedTime = ((frameTime - renderer.lastFrameUpdate)*1000) / getPerformanceFrequency().float
         renderer.lastFrameUpdate = frameTime
 
         checkError renderer.renderer.setDrawColor(0,0,0,255)
         checkError renderer.renderer.clear()
 
-        onTick(elapsedTime)
+        onTick(elapsedTime.float)
 
         checkError renderer.window.updateSurface()
 
