@@ -7,7 +7,8 @@ when isCanvas:
   import dom, jsconsole
   import canvasjs
 else:
-  import sdl2/gfx
+  import strutils, os
+  import sdl2/[gfx, ttf]
   import sdl2 except Point
 import vec
 
@@ -35,6 +36,7 @@ type
       scalingFactor, translationFactor: Point[float]
       savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
+      fontCache: Table[(string, cint), FontPtr]
     lastFrameUpdate: float
     preferredWidth: int
     preferredHeight: int
@@ -448,6 +450,7 @@ else:
       raise newException(Exception, "SDL2 failure: " & $getError())
 
   checkError sdl2.init(INIT_EVERYTHING)
+  checkError ttfInit()
   proc newRenderer2D*(id: string, width = 640, height = 480,
                       hidpi = false): Renderer2D =
 
@@ -467,7 +470,7 @@ else:
       preferredWidth: width,
       preferredHeight: height,
       scaleToScreen: false,
-      lastFrameUpdate: 0
+      lastFrameUpdate: 0,
     )
 
     for ev in EventKind:
@@ -617,9 +620,34 @@ else:
     assert width != 0 and height != 0
     discard # TODO
 
+  proc loadFont(renderer: Renderer2D, font: string): FontPtr =
+    let s = font.split(" ")
+    assert s[0].endsWith("px")
+
+    let size = parseInt(s[0][0 .. ^3]).cint
+    let name = s[1].replace(" ", "_") & ".ttf"
+
+    let key = (name, size)
+    if key notin renderer.fontCache:
+      renderer.fontCache[key] = openFont(getCurrentDir() / "fonts" / name, size)
+
+    result = renderer.fontCache[key]
+    checkError(result)
+
   proc fillText*(renderer: Renderer2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica") =
-    discard # TODO
+    let color = parseColor(style).extractRGB()
+    let winSurface = renderer.window.getSurface()
+    checkError winSurface
+    let sdlColor = sdl2.color(color.r, color.g, color.b, 255)
+
+    let font = renderer.loadFont(font)
+    let surface = renderUtf8Blended(font, text, sdlColor)
+    checkError surface
+
+    var srcRect = sdl2.rect(0, 0, surface.w, surface.h)
+    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, surface.w, surface.h)
+    blitSurface(src=surface, addr srcRect, winSurface, addr destRect)
 
   # Path drawing
   proc lineTo*(renderer: Renderer2D, x, y: float) =
