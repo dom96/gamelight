@@ -468,6 +468,7 @@ else:
       preferredHeight: height,
       scaleToScreen: false,
       lastFrameUpdate: 0,
+      scalingFactor: Point[float](x: 1.0, y: 1.0)
     )
 
     for ev in EventKind:
@@ -695,7 +696,9 @@ else:
     renderer.savedFactors.add((renderer.scalingFactor, renderer.translationFactor))
 
   proc restore*(renderer: Renderer2D) =
-    let (scalingFactor, translationFactor) = renderer.savedFactors.pop()
+    let (scalingFactor, translationFactor) =
+      if renderer.savedFactors.len > 0: renderer.savedFactors.pop()
+      else: (Point[float](x: 1, y: 1), Point[float](x: 0, y: 1))
     renderer.scalingFactor = scalingFactor
     renderer.renderer.setScale(renderer.scalingFactor.x, renderer.scalingFactor.y)
     renderer.translationFactor = translationFactor
