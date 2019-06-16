@@ -423,6 +423,18 @@ when isCanvas:
     renderer.context.strokeStyle = style
     renderer.context.lineWidth = lineWidth
     renderer.context.stroke()
+
+  proc scale*(renderer: Renderer2D, x, y: float) =
+    renderer.context.scale(x, y)
+
+  proc translate*(renderer: Renderer2D, x, y: float) =
+    renderer.context.translate(x, y)
+
+  proc save*(renderer: Renderer2D) =
+    renderer.context.save()
+
+  proc restore*(renderer: Renderer2D) =
+    renderer.context.restore()
 else:
   # SDL2
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
