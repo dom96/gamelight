@@ -402,6 +402,27 @@ when isCanvas:
 
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEvent)) =
     window.addEventListener("mousemove", (ev: Event) => onMouseMotion(ev.MouseMotionEvent))
+
+  proc moveTo*(renderer: Renderer2D, x, y: float) =
+    renderer.context.moveTo(x, y)
+
+  proc lineTo*(renderer: Renderer2D, x, y: float) =
+    renderer.context.lineTo(x, y)
+
+  proc beginPath*(renderer: Renderer2D) =
+    renderer.context.beginPath()
+
+  proc closePath*(renderer: Renderer2D) =
+    renderer.context.closePath()
+
+  proc fillPath*(renderer: Renderer2D, style: string) =
+    renderer.context.fillStyle = style
+    renderer.context.fill()
+
+  proc strokePath*(renderer: Renderer2D, style: string, lineWidth: int) =
+    renderer.context.strokeStyle = style
+    renderer.context.lineWidth = lineWidth
+    renderer.context.stroke()
 else:
   # SDL2
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
