@@ -8,7 +8,7 @@ when isCanvas:
   import canvasjs
 else:
   import strutils, os
-  import sdl2/[gfx, ttf]
+  import sdl2/[gfx, ttf, image]
   import sdl2 except Point
 import vec
 
@@ -51,13 +51,13 @@ type
   ImageAlignment* = enum
     Center, TopLeft
 
-proc adjustPos(width, height: int, pos: Point, align: ImageAlignment): Point =
+proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Point[T] =
   result = pos
   case align
   of Center:
-    result = Point(
-      x: result.x - (width / 2),
-      y: result.y - (height / 2)
+    result = Point[T](
+      x: pos.x - (width / 2),
+      y: pos.y - (height / 2)
     )
   of TopLeft:
     discard
@@ -620,11 +620,26 @@ else:
     )
 
   proc drawImage*(
-    renderer: Renderer2D, url: string, pos: Point, width, height: int,
+    renderer: Renderer2D, file: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     assert width != 0 and height != 0
-    discard # TODO
+    let file =
+      if file.isAbsolute(): file
+      else: getCurrentDir() / file
+    let img = loadTexture(renderer.renderer, file)
+    checkError img
+
+    let pos = applyTranslation(renderer, adjustPos(width, height, pos, align))
+    var center =
+      case align
+      of ImageAlignment.Center:
+        (cint(width div 2), cint(height div 2))
+      of ImageAlignment.TopLeft:
+        (0.cint, 0.cint)
+
+    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
+    checkError renderer.renderer.copyEx(img, nil, addr destRect, degrees, addr center)
 
   proc loadFont(renderer: Renderer2D, font: string): FontPtr =
     let s = font.split(" ")
