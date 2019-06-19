@@ -1,4 +1,5 @@
-import sugar, colors, math, tables, lenientops
+import sugar, colors, math, tables
+from lenientops import `/`
 
 const
   isCanvas = defined(js)
@@ -34,8 +35,9 @@ type
       window: WindowPtr
       renderer: RendererPtr
       events: array[EventKind, proc (evt: sdl2.Event)]
-      scalingFactor, translationFactor: Point[float]
-      savedFactors: seq[(Point[float], Point[float])]
+      scalingFactor: Point[float]
+      translationFactor: Point[int]
+      savedFactors: seq[(Point[float], Point[int])]
       currentPath: seq[Point[int]]
       fontCache: Table[(string, cint), FontPtr]
       lastFrameUpdate: uint64
@@ -56,8 +58,8 @@ proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Poi
   case align
   of Center:
     result = Point[T](
-      x: pos.x - (width / 2),
-      y: pos.y - (height / 2)
+      x: T(pos.x.int - (width div 2)),
+      y: T(pos.y.int - (height div 2))
     )
   of TopLeft:
     discard
@@ -565,14 +567,14 @@ else:
 
   proc applyTranslation(renderer: Renderer2D, x, y: int | float): (cint, cint) =
     return (
-      cint(x + renderer.translationFactor.x),
-      cint(y + renderer.translationFactor.y)
+      cint(x.int + renderer.translationFactor.x),
+      cint(y.int + renderer.translationFactor.y)
     )
 
   proc applyTranslation(renderer: Renderer2D, pos: Point[int] | Point[float]): Point[int] =
     return Point[int](
-      x: pos.x.int + renderer.translationFactor.x.int,
-      y: pos.y.int + renderer.translationFactor.y.int
+      x: pos.x.int + renderer.translationFactor.x,
+      y: pos.y.int + renderer.translationFactor.y
     )
 
   # Drawing
@@ -718,7 +720,7 @@ else:
     renderer.renderer.setScale(x, y)
 
   proc translate*(renderer: Renderer2D, x, y: float) =
-    renderer.translationFactor = vec.Point[float](x: x, y: y)
+    renderer.translationFactor = vec.Point[int](x: x.int, y: y.int)
 
   proc save*(renderer: Renderer2D) =
     renderer.savedFactors.add((renderer.scalingFactor, renderer.translationFactor))
@@ -726,7 +728,7 @@ else:
   proc restore*(renderer: Renderer2D) =
     let (scalingFactor, translationFactor) =
       if renderer.savedFactors.len > 0: renderer.savedFactors.pop()
-      else: (Point[float](x: 1, y: 1), Point[float](x: 0, y: 1))
+      else: (Point[float](x: 1, y: 1), Point[int](x: 0, y: 0))
     renderer.scalingFactor = scalingFactor
     renderer.renderer.setScale(renderer.scalingFactor.x, renderer.scalingFactor.y)
     renderer.translationFactor = translationFactor
