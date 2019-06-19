@@ -630,6 +630,7 @@ else:
       if file.isAbsolute(): file
       else: getCurrentDir() / file
     let img = loadTexture(renderer.renderer, file)
+    defer: destroy img
     checkError img
 
     let pos = applyTranslation(renderer, adjustPos(width, height, pos, align))
@@ -665,16 +666,18 @@ else:
 
     let textSurface = renderTextSolid(font, text, sdlColor)
     checkError textSurface
+    defer: freeSurface(textSurface)
+
     let texture = createTextureFromSurface(renderer.renderer, textSurface)
+    checkError texture
+    defer: destroy(texture)
     let width = textSurface.w
     let height = textSurface.h
-    freeSurface(textSurface)
 
     let pos = applyTranslation(renderer, pos)
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width, height)
     # echo("Render: ", destRect, " ", text)
     checkError sdl2.copy(renderer.renderer, texture, nil, addr destRect)
-    destroy(texture)
 
   # Path drawing
   proc lineTo*(renderer: Renderer2D, x, y: float) =
