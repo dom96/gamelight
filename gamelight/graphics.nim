@@ -389,10 +389,10 @@ when isCanvas:
     renderer.context.fill()
 
   proc onFrame(renderer: Renderer2D, frameTime: float, onTick: proc (elapsedTime: float)) =
-    let r = window.requestAnimationFrame((time: float) => onFrame(renderer, time, onTick))
     let elapsedTime = frameTime - renderer.lastFrameUpdate
     renderer.lastFrameUpdate = frameTime
     onTick(elapsedTime)
+    let r = window.requestAnimationFrame((time: float) => onFrame(renderer, time, onTick))
 
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
     onFrame(renderer, 0, onTick)
