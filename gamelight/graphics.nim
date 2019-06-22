@@ -49,6 +49,11 @@ type
       positionedElements: seq[PositionedElement]
       images: Table[string, Image]
 
+  Surface2D* = ref object ## Off-screen rendering canvas.
+    when isCanvas:
+      canvas: EmbedElement
+      context*: CanvasRenderingContext
+
 type
   ImageAlignment* = enum
     Center, TopLeft
@@ -69,6 +74,7 @@ when isCanvas:
   type
     MouseButtonEvent* = MouseEvent
     MouseMotionEvent* = MouseEvent
+    Drawable2D* = Renderer2D or Surface2D
 
   const
     positionedElementCssClass = "gamelight-graphics-element"
@@ -194,7 +200,15 @@ when isCanvas:
 
     resizeCanvas(result)
 
-  proc strokeLine*(renderer: Renderer2D, start, finish: Point, width = 1,
+  proc newSurface2D*(width: int, height: int): Surface2D =
+    result = Surface2D(
+      canvas: document.createElement("canvas").EmbedElement
+    )
+    result.canvas.width = width
+    result.canvas.height = height
+    result.context = result.canvas.getContext("2d")
+
+  proc strokeLine*(renderer: Drawable2D, start, finish: Point, width = 1,
       style = "#000000", shadowBlur = 0, shadowColor = "#000000") =
     renderer.context.beginPath()
     renderer.context.moveTo(start.x, start.y)
@@ -207,7 +221,7 @@ when isCanvas:
 
     renderer.context.shadowBlur = 0
 
-  proc strokeLines*(renderer: Renderer2D, points: seq[Point], width = 1,
+  proc strokeLines*(renderer: Drawable2D, points: seq[Point], width = 1,
       style = "#000000", shadowBlur = 0, shadowColor = "#000000") =
     if points.len == 0: return
     renderer.context.beginPath()
@@ -225,27 +239,27 @@ when isCanvas:
 
     renderer.context.shadowBlur = 0
 
-  proc fillRect*(renderer: Renderer2D, x, y, width, height: int | float,
+  proc fillRect*(renderer: Drawable2D, x, y, width, height: int | float,
       style = "#000000") =
     renderer.context.fillStyle = style
     renderer.context.fillRect(x, y, width, height)
 
-  proc strokeRect*(renderer: Renderer2D, x, y, width, height: int | float,
+  proc strokeRect*(renderer: Drawable2D, x, y, width, height: int | float,
       style = "#000000", lineWidth = 1) =
     renderer.context.strokeStyle = style
     renderer.context.lineWidth = lineWidth
     renderer.context.strokeRect(x, y, width, height)
 
-  proc fillText*(renderer: Renderer2D, text: string, pos: Point,
+  proc fillText*(renderer: Drawable2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica") =
     renderer.context.fillStyle = style
     renderer.context.font = font
     renderer.context.fillText(text, pos.x, pos.y)
 
-  proc setTranslation*(renderer: Renderer2D, pos: Point, zoom=1.0) =
+  proc setTranslation*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
 
-  proc centerOn*(renderer: Renderer2D, pos: Point, zoom=1.0) =
+  proc centerOn*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.translate(-pos.x, -pos.y)
     renderer.context.scale(zoom, zoom)
     renderer.context.translate(
@@ -253,10 +267,10 @@ when isCanvas:
       renderer.canvas.height / 2
     )
 
-  proc getWidth*(renderer: Renderer2D): int =
+  proc getWidth*(renderer: Drawable2D): int =
     renderer.canvas.width
 
-  proc getHeight*(renderer: Renderer2D): int =
+  proc getHeight*(renderer: Drawable2D): int =
     renderer.canvas.height
 
   proc setProperties(renderer: Renderer2D, element: Element, pos: Point,
@@ -325,7 +339,7 @@ when isCanvas:
     renderer.canvas.parentNode.insertBefore(input, renderer.canvas)
     return input.OptionElement
 
-  proc `[]=`*(renderer: Renderer2D, pos: (int, int) | (float, float),
+  proc `[]=`*(renderer: Drawable2D, pos: (int, int) | (float, float),
               color: Color) =
     let image = renderer.context.createImageData(1, 1)
     let (r, g, b) = color.extractRGB()
@@ -336,10 +350,10 @@ when isCanvas:
 
     renderer.context.putImageData(image, round(pos[0]), round(pos[1]))
 
-  proc `[]=`*(renderer: Renderer2D, pos: Point, color: Color) =
+  proc `[]=`*(renderer: Drawable2D, pos: Point, color: Color) =
     renderer[(pos.x, pos.y)] = color
 
-  proc setRotation*(renderer: Renderer2D, rotation: float) =
+  proc setRotation*(renderer: Drawable2D, rotation: float) =
     ## Sets the current renderer surface rotation to the specified radians value.
     renderer.context.rotate((PI - renderer.rotation) + rotation)
     renderer.rotation = rotation
@@ -358,7 +372,7 @@ when isCanvas:
     renderer.scaleToScreen
 
   proc drawImage*(
-    renderer: Renderer2D, url: string, pos: Point, width, height: int,
+    renderer: Drawable2D, url: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     assert width != 0 and height != 0
@@ -380,8 +394,11 @@ when isCanvas:
 
     renderer.context.restore()
 
+  proc copy*[T: Drawable2D, Y: Drawable2D](renderer: T, other: Y, pos: Point, width, height: int) =
+    renderer.context.drawImage(other.canvas, pos.x, pos.y, width, height)
+
   proc fillCircle*(
-    renderer: Renderer2D, pos: Point, radius: int | float, style = "#000000"
+    renderer: Drawable2D, pos: Point, radius: int | float, style = "#000000"
   ) =
     renderer.context.beginPath()
     renderer.context.arc(pos.x, pos.y, radius, 0, 2 * math.PI)
@@ -412,37 +429,37 @@ when isCanvas:
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEvent)) =
     window.addEventListener("mousemove", (ev: Event) => onMouseMotion(ev.MouseMotionEvent))
 
-  proc moveTo*(renderer: Renderer2D, x, y: float) =
+  proc moveTo*(renderer: Drawable2D, x, y: float) =
     renderer.context.moveTo(x, y)
 
-  proc lineTo*(renderer: Renderer2D, x, y: float) =
+  proc lineTo*(renderer: Drawable2D, x, y: float) =
     renderer.context.lineTo(x, y)
 
-  proc beginPath*(renderer: Renderer2D) =
+  proc beginPath*(renderer: Drawable2D) =
     renderer.context.beginPath()
 
-  proc closePath*(renderer: Renderer2D) =
+  proc closePath*(renderer: Drawable2D) =
     renderer.context.closePath()
 
-  proc fillPath*(renderer: Renderer2D, style: string) =
+  proc fillPath*(renderer: Drawable2D, style: string) =
     renderer.context.fillStyle = style
     renderer.context.fill()
 
-  proc strokePath*(renderer: Renderer2D, style: string, lineWidth: int) =
+  proc strokePath*(renderer: Drawable2D, style: string, lineWidth: int) =
     renderer.context.strokeStyle = style
     renderer.context.lineWidth = lineWidth
     renderer.context.stroke()
 
-  proc scale*(renderer: Renderer2D, x, y: float) =
+  proc scale*(renderer: Drawable2D, x, y: float) =
     renderer.context.scale(x, y)
 
-  proc translate*(renderer: Renderer2D, x, y: float) =
+  proc translate*(renderer: Drawable2D, x, y: float) =
     renderer.context.translate(x, y)
 
-  proc save*(renderer: Renderer2D) =
+  proc save*(renderer: Drawable2D) =
     renderer.context.save()
 
-  proc restore*(renderer: Renderer2D) =
+  proc restore*(renderer: Drawable2D) =
     renderer.context.restore()
 else:
   # SDL2

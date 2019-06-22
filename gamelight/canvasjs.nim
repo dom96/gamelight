@@ -84,8 +84,8 @@ proc save*(context: CanvasRenderingContext)
 
 proc restore*(context: CanvasRenderingContext)
 
-proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy: int | float)
+proc drawImage*(context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy: int | float)
 
-proc drawImage*(context: CanvasRenderingContext, img: Image, dx, dy, dWidth, dHeight: int | float)
+proc drawImage*(context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy, dWidth, dHeight: int | float)
 
 proc arc*(context: CanvasRenderingContext, x, y, radius: int | float, startAngle, endAngle: float, anticlockwise=false)
