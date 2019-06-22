@@ -461,6 +461,13 @@ when isCanvas:
 
   proc restore*(renderer: Drawable2D) =
     renderer.context.restore()
+
+  proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
+    {.emit: """
+      var region = new Path2D();
+      region.rect(`pos`.`x`, `pos`.`y`, `width`, `height`);
+      `renderer`.`context`.clip(region, "nonzero");
+    """.}
 else:
   # SDL2
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
