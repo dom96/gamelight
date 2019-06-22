@@ -557,6 +557,9 @@ else:
           of EventType.MouseButtonDown:
             if not renderer.events[EventKind.MouseButtonDown].isNil:
               renderer.events[EventKind.MouseButtonDown](event)
+          of EventType.MouseButtonUp:
+            if not renderer.events[EventKind.MouseButtonUp].isNil:
+              renderer.events[EventKind.MouseButtonUp](event)
           of EventType.MouseMotion:
             if not renderer.events[EventKind.MouseMotion].isNil:
               renderer.events[EventKind.MouseMotion](event)
