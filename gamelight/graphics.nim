@@ -33,7 +33,7 @@ type
       lastFrameUpdate: float
     else:
       window: WindowPtr
-      renderer: RendererPtr
+      sdlRenderer: RendererPtr
       events: array[EventKind, proc (evt: sdl2.Event)]
       scalingFactor: Point[float]
       translationFactor: Point[int]
@@ -53,6 +53,17 @@ type
     when isCanvas:
       canvas: EmbedElement
       context*: CanvasRenderingContext
+    else:
+      renderer2D: Renderer2D
+      texture: TexturePtr
+      scalingFactor: Point[float]
+      translationFactor: Point[int]
+      savedFactors: seq[(Point[float], Point[int])]
+      currentPath: seq[Point[int]]
+      preferredWidth: int
+      preferredHeight: int
+
+  Drawable2D* = Renderer2D or Surface2D
 
 type
   ImageAlignment* = enum
@@ -74,7 +85,6 @@ when isCanvas:
   type
     MouseButtonEvent* = MouseEvent
     MouseMotionEvent* = MouseEvent
-    Drawable2D* = Renderer2D or Surface2D
 
   const
     positionedElementCssClass = "gamelight-graphics-element"
@@ -200,7 +210,7 @@ when isCanvas:
 
     resizeCanvas(result)
 
-  proc newSurface2D*(width: int, height: int): Surface2D =
+  proc newSurface2D*(renderer: Renderer2D, width: int, height: int): Surface2D =
     result = Surface2D(
       canvas: document.createElement("canvas").EmbedElement
     )
@@ -394,7 +404,7 @@ when isCanvas:
 
     renderer.context.restore()
 
-  proc copy*[T: Drawable2D, Y: Drawable2D](renderer: T, other: Y, pos: Point, width, height: int) =
+  proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     renderer.context.drawImage(other.canvas, pos.x, pos.y, width, height)
 
   proc fillCircle*(
@@ -489,7 +499,7 @@ else:
 
     result = Renderer2D(
       window: window,
-      renderer: renderer,
+      sdlRenderer: renderer,
       preferredWidth: width,
       preferredHeight: height,
       scaleToScreen: false,
@@ -507,6 +517,26 @@ else:
     #   (ev: Event) => (resizeCanvas(capturedResult)))
 
     # resizeCanvas(result)=
+
+  proc newSurface2D*(renderer: Renderer2D, width: int, height: int): Surface2D =
+    result = Surface2D(
+      renderer2D: renderer,
+      texture: sdl2.createTexture(
+        renderer.sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+        width.cint, height.cint
+      ),
+      preferredWidth: width,
+      preferredHeight: height
+    )
+    checkError result.texture
+
+  proc getSdlRenderer(renderer: Renderer2D): RendererPtr =
+    checkError renderer.sdlRenderer.setRenderTarget(nil)
+    return renderer.sdlRenderer
+
+  proc getSdlRenderer(surface: Surface2D): RendererPtr =
+    checkError surface.renderer2D.sdlRenderer.setRenderTarget(surface.texture)
+    return surface.renderer2D.sdlRenderer
 
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
     var
@@ -536,15 +566,15 @@ else:
         let elapsedTime = ((frameTime - renderer.lastFrameUpdate)*1000) / getPerformanceFrequency().float
         renderer.lastFrameUpdate = frameTime
 
-        checkError renderer.renderer.setDrawColor(0,0,0,255)
-        checkError renderer.renderer.clear()
+        checkError renderer.getSdlRenderer.setDrawColor(0,0,0,255)
+        checkError renderer.getSdlRenderer.clear()
 
         onTick(elapsedTime.float)
 
-        renderer.renderer.present()
+        renderer.getSdlRenderer.present()
         fpsman.delay
 
-    destroy renderer.renderer
+    destroy renderer.getSdlRenderer
     destroy renderer.window
 
   type
@@ -589,13 +619,13 @@ else:
 
   # Drawing utils
 
-  proc applyTranslation(renderer: Renderer2D, x, y: int | float): (cint, cint) =
+  proc applyTranslation(renderer: Drawable2D, x, y: int | float): (cint, cint) =
     return (
       cint(x.int + renderer.translationFactor.x),
       cint(y.int + renderer.translationFactor.y)
     )
 
-  proc applyTranslation(renderer: Renderer2D, pos: Point[int] | Point[float]): Point[int] =
+  proc applyTranslation(renderer: Drawable2D, pos: Point[int] | Point[float]): Point[int] =
     return Point[int](
       x: pos.x.int + renderer.translationFactor.x,
       y: pos.y.int + renderer.translationFactor.y
@@ -603,30 +633,30 @@ else:
 
   # Drawing
 
-  proc fillRect*(renderer: Renderer2D, x, y, width, height: int | float,
+  proc fillRect*(renderer: Drawable2D, x, y, width, height: int | float,
       style = "#000000") =
     let color = parseColor(style).extractRGB()
-    checkError renderer.renderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
+    checkError renderer.getSdlRenderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x, y, width.cint, height.cint)
-    checkError renderer.renderer.fillRect(addr rect)
+    checkError renderer.getSdlRenderer.fillRect(addr rect)
 
-  proc strokeRect*(renderer: Renderer2D, x, y, width, height: int | float,
+  proc strokeRect*(renderer: Drawable2D, x, y, width, height: int | float,
       style = "#000000", lineWidth = 1) =
     let color = parseColor(style).extractRGB()
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x.cint, y.cint, width.cint, height.cint)
     # TODO: Line width
-    checkError renderer.renderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
-    checkError renderer.renderer.drawRect(addr rect)
+    checkError renderer.getSdlRenderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
+    checkError renderer.getSdlRenderer.drawRect(addr rect)
 
   proc fillCircle*(
-    renderer: Renderer2D, pos: Point, radius: int | float, style = "#000000"
+    renderer: Drawable2D, pos: Point, radius: int | float, style = "#000000"
   ) =
     let color = parseColor(style).extractRGB()
 
     let pos = applyTranslation(renderer, pos)
-    checkError renderer.renderer.aacircleRGBA(
+    checkError renderer.getSdlRenderer.aacircleRGBA(
       pos.x.int16,
       pos.y.int16,
       radius.int16,
@@ -635,7 +665,7 @@ else:
       color.b.uint8,
       255
     )
-    checkError renderer.renderer.filledCircleRGBA(
+    checkError renderer.getSdlRenderer.filledCircleRGBA(
       pos.x.int16,
       pos.y.int16,
       radius.int16,
@@ -646,14 +676,14 @@ else:
     )
 
   proc drawImage*(
-    renderer: Renderer2D, file: string, pos: Point, width, height: int,
+    renderer: Drawable2D, file: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     assert width != 0 and height != 0
     let file =
       if file.isAbsolute(): file
       else: getCurrentDir() / file
-    let img = loadTexture(renderer.renderer, file)
+    let img = loadTexture(renderer.getSdlRenderer, file)
     defer: destroy img
     checkError img
 
@@ -666,7 +696,13 @@ else:
         (0.cint, 0.cint)
 
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
-    checkError renderer.renderer.copyEx(img, nil, addr destRect, degrees, addr center)
+    checkError renderer.getSdlRenderer.copyEx(img, nil, addr destRect, degrees, addr center)
+
+  proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
+    let pos = applyTranslation(renderer, pos)
+
+    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
+    checkError renderer.getSdlRenderer.copyEx(other.texture, nil, addr destRect, 0, nil)
 
   proc loadFont(renderer: Renderer2D, font: string): FontPtr =
     let s = font.split(" ")
@@ -682,17 +718,21 @@ else:
     result = renderer.fontCache[key]
     checkError(result)
 
-  proc fillText*(renderer: Renderer2D, text: string, pos: Point,
+  proc fillText*(renderer: Drawable2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica") =
     let color = parseColor(style).extractRGB()
-    let font = renderer.loadFont(font)
+    let font =
+      when renderer is Renderer2D:
+        renderer.loadFont(font)
+      else:
+        renderer.renderer2D.loadFont(font)
     let sdlColor = sdl2.color(color.r, color.g, color.b, 0)
 
     let textSurface = renderTextSolid(font, text, sdlColor)
     checkError textSurface
     defer: freeSurface(textSurface)
 
-    let texture = createTextureFromSurface(renderer.renderer, textSurface)
+    let texture = createTextureFromSurface(renderer.getSdlRenderer, textSurface)
     checkError texture
     defer: destroy(texture)
     let width = textSurface.w
@@ -701,26 +741,26 @@ else:
     let pos = applyTranslation(renderer, pos)
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width, height)
     # echo("Render: ", destRect, " ", text)
-    checkError sdl2.copy(renderer.renderer, texture, nil, addr destRect)
+    checkError sdl2.copy(renderer.getSdlRenderer, texture, nil, addr destRect)
 
   # Path drawing
-  proc lineTo*(renderer: Renderer2D, x, y: float) =
+  proc lineTo*(renderer: Drawable2D, x, y: float) =
     renderer.currentPath.add(Point[int](x: x.int, y: y.int))
 
-  proc moveTo*(renderer: Renderer2D, x, y: float) =
+  proc moveTo*(renderer: Drawable2D, x, y: float) =
     assert renderer.currentPath.len == 0
     renderer.lineTo(x, y)
 
-  proc beginPath*(renderer: Renderer2D) =
+  proc beginPath*(renderer: Drawable2D) =
     renderer.currentPath = @[]
 
-  proc closePath*(renderer: Renderer2D) =
+  proc closePath*(renderer: Drawable2D) =
     discard
 
-  proc fillPath*(renderer: Renderer2D, style: string) =
+  proc fillPath*(renderer: Drawable2D, style: string) =
     discard # TODO;
 
-  proc strokePath*(renderer: Renderer2D, style: string, lineWidth: int) =
+  proc strokePath*(renderer: Drawable2D, style: string, lineWidth: int) =
     let color = parseColor(style).extractRGB()
 
     for i in 0 ..< renderer.currentPath.len:
@@ -729,7 +769,7 @@ else:
         else: i+1
       let first = applyTranslation(renderer, renderer.currentPath[i])
       let second = applyTranslation(renderer, renderer.currentPath[next])
-      renderer.renderer.thickLineRGBA(
+      renderer.getSdlRenderer.thickLineRGBA(
         first.x.int16,
         first.y.int16,
         second.x.int16,
@@ -741,28 +781,35 @@ else:
         255
       )
 
-  # Viewport functions
-  proc scale*(renderer: Renderer2D, x, y: float) =
-    renderer.scalingFactor = vec.Point[float](x: x, y: y)
-    renderer.renderer.setScale(x, y)
+  proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
+    let pos = applyTranslation(renderer, pos)
+    var rect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
+    checkError sdl2.setClipRect(renderer.getSdlRenderer, addr rect)
 
-  proc translate*(renderer: Renderer2D, x, y: float) =
+  # Viewport functions
+  proc scale*(renderer: Drawable2D, x, y: float) =
+    renderer.scalingFactor = vec.Point[float](x: x, y: y)
+    renderer.getSdlRenderer.setScale(x, y)
+
+  proc translate*(renderer: Drawable2D, x, y: float) =
     renderer.translationFactor = vec.Point[int](x: x.int, y: y.int)
 
-  proc save*(renderer: Renderer2D) =
+  proc save*(renderer: Drawable2D) =
+    checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
     renderer.savedFactors.add((renderer.scalingFactor, renderer.translationFactor))
 
-  proc restore*(renderer: Renderer2D) =
+  proc restore*(renderer: Drawable2D) =
+    checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
     let (scalingFactor, translationFactor) =
       if renderer.savedFactors.len > 0: renderer.savedFactors.pop()
       else: (Point[float](x: 1, y: 1), Point[int](x: 0, y: 0))
     renderer.scalingFactor = scalingFactor
-    renderer.renderer.setScale(renderer.scalingFactor.x, renderer.scalingFactor.y)
+    renderer.getSdlRenderer.setScale(renderer.scalingFactor.x, renderer.scalingFactor.y)
     renderer.translationFactor = translationFactor
 
   # Accessors
-  proc getWidth*(renderer: Renderer2D): int =
+  proc getWidth*(renderer: Drawable2D): int =
     renderer.preferredWidth
 
-  proc getHeight*(renderer: Renderer2D): int =
+  proc getHeight*(renderer: Drawable2D): int =
     renderer.preferredHeight
