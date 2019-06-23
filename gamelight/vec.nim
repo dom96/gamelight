@@ -75,3 +75,10 @@ proc angle*(point: Point): float =
 proc normalize*(point: Point): Point =
   ## Returns a unit vector of ``point``.
   return point / sqrt(point.x^2 + point.y^2)
+
+proc toDirVec*(angle: float): Point[float] =
+  ## Returns a unit vector for the specified angle in degrees.
+  return Point[float](
+    x: math.cos(degToRad(angle)),
+    y: math.sin(degToRad(angle))
+  )

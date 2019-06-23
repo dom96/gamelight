@@ -731,7 +731,7 @@ else:
         renderer.renderer2D.loadFont(font)
     let sdlColor = sdl2.color(color.r, color.g, color.b, 0)
 
-    let textSurface = renderTextSolid(font, text, sdlColor)
+    let textSurface = renderUtf8Blended(font, text, sdlColor)
     checkError textSurface
     defer: freeSurface(textSurface)
 
