@@ -439,6 +439,15 @@ when isCanvas:
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEvent)) =
     window.addEventListener("mousemove", (ev: Event) => onMouseMotion(ev.MouseMotionEvent))
 
+  proc `onTouchMove=`*(renderer: Renderer2D, onTouchMotion: proc (event: TouchEvent)) =
+    window.addEventListener("touchmove", (ev: Event) => onTouchMotion(ev.TouchEvent))
+
+  proc `onTouchStart=`*(renderer: Renderer2D, onTouchStart: proc (event: TouchEvent)) =
+    window.addEventListener("touchstart", (ev: Event) => onTouchStart(ev.TouchEvent))
+
+  proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
+    window.addEventListener("touchend", (ev: Event) => onTouchEnd(ev.TouchEvent))
+
   proc moveTo*(renderer: Drawable2D, x, y: float) =
     renderer.context.moveTo(x, y)
 
@@ -584,6 +593,7 @@ else:
     KeyboardEvent* = KeyboardEventObj
     MouseButtonEvent* = MouseButtonEventObj
     MouseMotionEvent* = MouseMotionEventObj
+    TouchEvent* = TouchFingerEventObj
 
   proc keyCode*(event: KeyboardEvent): int =
     event.keysym.sym.int
@@ -619,6 +629,15 @@ else:
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.MouseMotionEventObj](event)
         onMouseMotion(ev)
+
+  proc `onTouchMove=`*(renderer: Renderer2D, onTouchMove: proc (event: TouchEvent)) =
+    discard # TODO: Might be worth implementing these for SDL.
+
+  proc `onTouchStart=`*(renderer: Renderer2D, onTouchStart: proc (event: TouchEvent)) =
+    discard
+
+  proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
+    discard
 
   # Drawing utils
 
