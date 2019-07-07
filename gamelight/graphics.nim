@@ -598,6 +598,9 @@ else:
   proc keyCode*(event: KeyboardEvent): int =
     event.keysym.sym.int
 
+  proc key*(event: KeyboardEvent): string =
+    $getScancodeName(event.keysym.scancode)
+
   proc preventDefault*(event: KeyboardEvent | MouseButtonEvent | MouseMotionEvent) = discard
 
   proc clientX*(event: MouseButtonEvent | MouseMotionEvent): int =

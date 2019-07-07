@@ -17,11 +17,23 @@ proc `+`*(point: Point, point2: Point): Point =
 proc `-`*(point: Point, point2: Point): Point =
   (point.x - point2.x, point.y - point2.y)
 
+template `+=`*(point: var Point, point2: Point): untyped =
+  point = point + point2
+
+template `-=`*(point: var Point, point2: Point): untyped =
+  point = point - point2
+
 proc `+`*[T](point: Point[T], scalar: T): Point[T] =
   (point.x + scalar, point.y + scalar)
 
 proc `-`*[T](point: Point[T], scalar: T): Point[T] =
   (point.x - scalar, point.y - scalar)
+
+template `+=`*[T](point: var Point[T], scalar: T): untyped =
+  point = point + scalar
+
+template `-=`*[T](point: var Point[T], scalar: T): untyped =
+  point = point - scalar
 
 proc `-`*(point: Point): Point =
   (-point.x, -point.y)
