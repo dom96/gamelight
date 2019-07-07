@@ -553,6 +553,7 @@ else:
       fpsman: FpsManager
     fpsman.init()
     fpsman.setFramerate(60)
+    renderer.lastFrameUpdate = getPerformanceCounter()
 
     block eventLoop:
       while true:
