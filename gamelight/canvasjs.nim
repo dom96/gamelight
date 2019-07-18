@@ -13,6 +13,7 @@ type
     lineWidth* {.importc.}: int
 
     font* {.importc.}: cstring
+    textAlign* {.importc.}: cstring
 
   ContextAttributes* = ref object
     alpha* {.importc.}: bool

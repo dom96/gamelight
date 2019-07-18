@@ -261,10 +261,13 @@ when isCanvas:
     renderer.context.strokeRect(x, y, width, height)
 
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
-      style = "#000000", font = "12px Helvetica") =
+      style = "#000000", font = "12px Helvetica", center = false) =
     renderer.context.fillStyle = style
     renderer.context.font = font
+    if center:
+      renderer.context.textAlign = "center"
     renderer.context.fillText(text, pos.x, pos.y)
+    renderer.context.textAlign = "left"
 
   proc setTranslation*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
@@ -745,7 +748,7 @@ else:
     checkError(result)
 
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
-      style = "#000000", font = "12px Helvetica") =
+      style = "#000000", font = "12px Helvetica", center = false) =
     let color = parseColor(style).extractRGB()
     let font =
       when renderer is Renderer2D:
@@ -765,7 +768,11 @@ else:
     let height = textSurface.h
 
     let pos = applyTranslation(renderer, pos)
-    var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width, height)
+    var destRect = sdl2.rect(
+      pos.x.cint - (if center: width div 2 else: 0),
+      pos.y.cint - (if center: height div 2 else: 0),
+      width, height
+    )
     # echo("Render: ", destRect, " ", text)
     checkError sdl2.copy(renderer.getSdlRenderer, texture, nil, addr destRect)
 
