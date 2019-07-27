@@ -708,6 +708,9 @@ else:
     renderer: Drawable2D, file: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
+    # TODO: Don't load textures on each draw (!) plus implement SVG workaround:
+    #  * control rastered scale by changing width/height param of SVG
+    #  * https://bugzilla.libsdl.org/show_bug.cgi?id=4072
     assert width != 0 and height != 0
     let file =
       if file.isAbsolute(): file

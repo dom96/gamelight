@@ -50,6 +50,17 @@ proc intersect*(rect: Rect, p: Point): bool =
   return p.x >= rect.left and p.x <= (rect.left + rect.width) and
       p.y >= rect.top and p.y <= (rect.top + rect.height)
 
+proc intersect*(rect: Rect, c: Circle): bool =
+  # https://stackoverflow.com/a/1879223/492186
+  let closestX = clamp(c[0].x, rect.left, (rect.left + rect.width))
+  let closestY = clamp(c[0].y, rect.top, (rect.top + rect.height))
+
+  let distanceX = c[0].x - closestX
+  let distanceY = c[0].y - closestY
+
+  let distanceSquared = (distanceX * distanceX) + (distanceY * distanceY)
+  return distanceSquared < (c[1] * c[1])
+
 proc intersect*(rect: Rect, line: LineSegment): bool =
   # Check if line is inside rectangle.
   if rect.intersect(line.start) or rect.intersect(line.finish):
@@ -200,6 +211,14 @@ when isMainModule:
     let r1 = (left: 36, top: 37, width: 3, height: 3)
     let p = Point[int](x: 39, y: 39)
     doAssert r1.intersect(p)
-    doAssert(not r1.inside(p))
+    # doAssert(not r1.inside(p)) ??
+
+  # Circle-rect intersect tests
+  block:
+    let a = (left: 0, top: 0, width: 100, height: 50)
+    let c1 = (Point[int](x: 5, y: 5), 10)
+    let c2 = (Point[int](x: 115, y: 5), 10)
+    assert(intersect(a, c1))
+    assert(not intersect(a, c2))
 
   echo("Tests passed!")
