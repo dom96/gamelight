@@ -249,13 +249,15 @@ when isCanvas:
 
     renderer.context.shadowBlur = 0
 
-  proc fillRect*(renderer: Drawable2D, x, y, width, height: int | float,
-      style = "#000000") =
+  proc fillRect*[T: SomeNumber, Y: SomeNumber](
+    renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
+  ) =
     renderer.context.fillStyle = style
     renderer.context.fillRect(x, y, width, height)
 
-  proc strokeRect*(renderer: Drawable2D, x, y, width, height: int | float,
-      style = "#000000", lineWidth = 1) =
+  proc strokeRect*[T: SomeNumber, Y: SomeNumber](
+    renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000", lineWidth = 1
+  ) =
     renderer.context.strokeStyle = style
     renderer.context.lineWidth = lineWidth
     renderer.context.strokeRect(x, y, width, height)
@@ -648,30 +650,32 @@ else:
 
   # Drawing utils
 
-  proc applyTranslation(renderer: Drawable2D, x, y: int | float): (cint, cint) =
+  proc applyTranslation[T: SomeNumber](renderer: Drawable2D, x, y: T): (cint, cint) =
     return (
-      cint(x.int + renderer.translationFactor.x),
-      cint(y.int + renderer.translationFactor.y)
+      cint(x + renderer.translationFactor.x.T),
+      cint(y + renderer.translationFactor.y.T)
     )
 
-  proc applyTranslation(renderer: Drawable2D, pos: Point[int] | Point[float]): Point[int] =
-    return Point[int](
-      x: pos.x.int + renderer.translationFactor.x,
-      y: pos.y.int + renderer.translationFactor.y
+  proc applyTranslation[T: SomeNumber](renderer: Drawable2D, pos: Point[T]): Point[T] =
+    return Point[T](
+      x: pos.x + renderer.translationFactor.x.T,
+      y: pos.y + renderer.translationFactor.y.T
     )
 
   # Drawing
 
-  proc fillRect*(renderer: Drawable2D, x, y, width, height: int | float,
-      style = "#000000") =
+  proc fillRect*[T: SomeNumber, Y: SomeNumber](
+    renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
+  ) =
     let color = parseColor(style).extractRGB()
     checkError renderer.getSdlRenderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x, y, width.cint, height.cint)
     checkError renderer.getSdlRenderer.fillRect(addr rect)
 
-  proc strokeRect*(renderer: Drawable2D, x, y, width, height: int | float,
-      style = "#000000", lineWidth = 1) =
+  proc strokeRect*[T: SomeNumber, Y: SomeNumber](
+    renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000", lineWidth = 1
+  ) =
     let color = parseColor(style).extractRGB()
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x.cint, y.cint, width.cint, height.cint)

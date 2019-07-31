@@ -43,6 +43,9 @@ proc `-`*(point: Point): Point =
 proc `/`*[T](point: Point[T], scalar: T): Point[T] =
   (T(point.x / scalar), T(point.y / scalar))
 
+proc `div`*[T](point: Point[T], scalar: T): Point[T] =
+  (T(point.x div scalar), T(point.y div scalar))
+
 proc `*`*[T](point: Point[T], scalar: T): Point[T] =
   (T(point.x * scalar), T(point.y * scalar))
 
@@ -55,6 +58,12 @@ proc copy*(point: Point): Point =
 
 proc distanceSquared*[T](point, point2: Point[T]): T =
   return (point2.x - point.x)^2 + (point2.y - point.y)^2
+
+proc distanceSquared*[T](point: Point[float], point2: Point[T]): float =
+  return (point2.x.float - point.x)^2 + (point2.y.float - point.y)^2
+
+proc distanceSquared*[T](point: Point[T], point2: Point[float]): float {.inline.} =
+  return distanceSquared(point2, point)
 
 proc isOrigin*(point: Point): bool =
   return point.x == 0 and point.y == 0
