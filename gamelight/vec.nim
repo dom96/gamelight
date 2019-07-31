@@ -11,11 +11,11 @@ converter toPoint*(point: (int, int)): Point[int] =
 converter toPoint*(point: (float, float)): Point[float] =
   Point[float](x: point[0], y: point[1])
 
-proc `+`*(point: Point, point2: Point): Point =
-  (point.x + point2.x, point.y + point2.y)
+proc `+`*[T](point: Point[T], point2: Point[T]): Point[T] =
+  Point[T](x: point.x + point2.x, y: point.y + point2.y)
 
-proc `-`*(point: Point, point2: Point): Point =
-  (point.x - point2.x, point.y - point2.y)
+proc `-`*[T](point: Point[T], point2: Point[T]): Point[T] =
+  Point[T](x: point.x - point2.x, y: point.y - point2.y)
 
 template `+=`*(point: var Point, point2: Point): untyped =
   point = point + point2
