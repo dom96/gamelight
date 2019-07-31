@@ -5,8 +5,10 @@ type
 
 proc getOrigin(): Point[int] = Point[int](x: 0, y: 0)
 
-converter toPoint*(point: (int, int)): Point[int] =
-  Point[int](x: point[0], y: point[1])
+converter toPoint*[T: int | int8 | int16 | int32 | uint8 | uint16 | uint32](
+  point: (T, T)
+): Point[T] =
+  Point[T](x: point[0], y: point[1])
 
 converter toPoint*(point: (float, float)): Point[float] =
   Point[float](x: point[0], y: point[1])
