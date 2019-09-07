@@ -433,10 +433,10 @@ when isCanvas:
     renderer.context.fill()
 
   proc onFrame(renderer: Renderer2D, frameTime: float, onTick: proc (elapsedTime: float)) =
+    let r = window.requestAnimationFrame((time: float) => onFrame(renderer, time, onTick))
     let elapsedTime = frameTime - renderer.lastFrameUpdate
     renderer.lastFrameUpdate = frameTime
     onTick(elapsedTime)
-    let r = window.requestAnimationFrame((time: float) => onFrame(renderer, time, onTick))
 
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
     onFrame(renderer, 0, onTick)
@@ -465,10 +465,10 @@ when isCanvas:
   proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
     window.addEventListener("touchend", (ev: Event) => onTouchEnd(ev.TouchEvent))
 
-  proc moveTo*(renderer: Drawable2D, x, y: float) =
+  proc moveTo*(renderer: Drawable2D, x, y: float | int) =
     renderer.context.moveTo(x, y)
 
-  proc lineTo*(renderer: Drawable2D, x, y: float) =
+  proc lineTo*(renderer: Drawable2D, x, y: float | int) =
     renderer.context.lineTo(x, y)
 
   proc beginPath*(renderer: Drawable2D) =
@@ -807,10 +807,10 @@ else:
     checkError sizeUtf8(font, text, addr result.width, addr result.height)
 
   # Path drawing
-  proc lineTo*(renderer: Drawable2D, x, y: float) =
+  proc lineTo*(renderer: Drawable2D, x, y: float | int) =
     renderer.currentPath.add(Point[int](x: x.int, y: y.int))
 
-  proc moveTo*(renderer: Drawable2D, x, y: float) =
+  proc moveTo*(renderer: Drawable2D, x, y: float | int) =
     assert renderer.currentPath.len == 0
     renderer.lineTo(x, y)
 
