@@ -754,16 +754,31 @@ else:
 
   proc loadFont(renderer: Renderer2D, font: string): FontPtr =
     let s = font.split(" ")
-    assert s[0].endsWith("px")
+    var fontStyle: cint = TTF_STYLE_NORMAL
+    var index = 0
+    while index < s.len:
+      if s[index].endsWith("px"): break
+      case s[index].toLower()
+      of "bold":
+        fontStyle = fontStyle or TTF_STYLE_BOLD
+      of "italic":
+        fontStyle = fontStyle or TTF_STYLE_ITALIC
+      else:
+        assert false
+      index.inc()
 
-    let size = parseInt(s[0][0 .. ^3]).cint
-    let name = s[1].replace(" ", "_") & ".ttf"
+    assert s[index].endsWith("px")
+
+    let size = parseInt(s[index][0 .. ^3]).cint
+    index.inc()
+    let name = s[index].replace(" ", "_") & ".ttf"
 
     let key = (name, size)
     if key notin renderer.fontCache:
       renderer.fontCache[key] = openFont(getCurrentDir() / "fonts" / name, size)
 
     result = renderer.fontCache[key]
+    setFontStyle(result, fontStyle)
     checkError(result)
 
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
