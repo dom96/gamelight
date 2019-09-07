@@ -65,6 +65,9 @@ type
 
   Drawable2D* = Renderer2D or Surface2D
 
+  TextMetrics* = object
+    width*, height*: cint
+
 type
   ImageAlignment* = enum
     Center, TopLeft
@@ -270,6 +273,15 @@ when isCanvas:
       renderer.context.textAlign = "center"
     renderer.context.fillText(text, pos.x, pos.y)
     renderer.context.textAlign = "left"
+
+  proc getTextMetrics*(
+    renderer: Drawable2D, text: string, font = "12px Helvetica"
+  ): TextMetrics =
+    renderer.context.font = font
+
+    {.emit: """
+      `result`.`width` = `renderer`.`context`.measureText(`text`).width;
+    """.}
 
   proc setTranslation*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
@@ -782,6 +794,17 @@ else:
     )
     # echo("Render: ", destRect, " ", text)
     checkError sdl2.copy(renderer.getSdlRenderer, texture, nil, addr destRect)
+
+  proc getTextMetrics*(
+    renderer: Drawable2D, text: string, font = "12px Helvetica"
+  ): TextMetrics =
+    let font =
+      when renderer is Renderer2D:
+        renderer.loadFont(font)
+      else:
+        renderer.renderer2D.loadFont(font)
+
+    checkError sizeUtf8(font, text, addr result.width, addr result.height)
 
   # Path drawing
   proc lineTo*(renderer: Drawable2D, x, y: float) =
