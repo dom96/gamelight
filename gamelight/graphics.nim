@@ -839,19 +839,18 @@ else:
     discard # TODO;
 
   proc strokePath*(renderer: Drawable2D, style: string, lineWidth: int) =
+    # TODO: This algorithm doesn't have the same semantics as HTML canvas
     let color = parseColor(style).extractRGB()
-
     for i in 0 ..< renderer.currentPath.len:
-      let next =
-        if i == renderer.currentPath.len-1: 0
-        else: i+1
+      if i == renderer.currentPath.len-1: break
+      let next = i+1
       let first = applyTranslation(renderer, renderer.currentPath[i])
       let second = applyTranslation(renderer, renderer.currentPath[next])
       renderer.getSdlRenderer.thickLineRGBA(
         first.x.int16,
         first.y.int16,
-        second.x.int16,
-        second.y.int16,
+        second.x.int16 - (if i == 0 and first.y == second.y: 1 else: 0),
+        second.y.int16 - (if i == 0 and first.x == second.x: 1 else: 0),
         lineWidth.uint8,
         color.r.uint8,
         color.g.uint8,
