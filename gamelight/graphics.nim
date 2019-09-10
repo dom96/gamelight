@@ -1,4 +1,4 @@
-import sugar, colors, math, tables
+import sugar, math, tables, colors
 from lenientops import `/`
 
 const
@@ -11,6 +11,7 @@ else:
   import strutils, os
   import sdl2/[gfx, ttf, image]
   import sdl2 except Point
+  import chroma
 import vec
 
 when isCanvas:
@@ -405,9 +406,9 @@ when isCanvas:
     assert width != 0 and height != 0
     let pos = adjustPos(width, height, pos, align)
     renderer.context.save()
-    renderer.context.translate(pos.x + width / 2, pos.y + height / 2)
+    renderer.context.translate(pos.x.int + width div 2, int(pos.y) + height div 2)
     renderer.context.rotate(degToRad(degrees))
-    renderer.context.translate(-pos.x - width / 2, -pos.y - height / 2)
+    renderer.context.translate(int(-pos.x) - width div 2, int(-pos.y) - height div 2)
     if url in renderer.images:
       let img = renderer.images[url]
       renderer.context.drawImage(img, pos.x, pos.y, width, height)
@@ -676,11 +677,19 @@ else:
 
   # Drawing
 
+  proc setColor(renderer: Drawable2D, style: string) =
+    let color = parseHtmlColor(style).rgba()
+
+    checkError renderer.getSdlRenderer.setDrawColor(
+      color.r.uint8, color.g.uint8, color.b.uint8, color.a.uint8
+    )
+    if color.a != 0:
+      checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
+
   proc fillRect*[T: SomeNumber, Y: SomeNumber](
     renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
   ) =
-    let color = parseColor(style).extractRGB()
-    checkError renderer.getSdlRenderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
+    setColor(renderer, style)
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x, y, width.cint, height.cint)
     checkError renderer.getSdlRenderer.fillRect(addr rect)
@@ -688,19 +697,19 @@ else:
   proc strokeRect*[T: SomeNumber, Y: SomeNumber](
     renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000", lineWidth = 1
   ) =
-    let color = parseColor(style).extractRGB()
+    setColor(renderer, style)
     let (x, y) = applyTranslation(renderer, x, y)
     var rect = (x.cint, y.cint, width.cint, height.cint)
     # TODO: Line width
-    checkError renderer.getSdlRenderer.setDrawColor(color.r.uint8, color.g.uint8, color.b.uint8)
     checkError renderer.getSdlRenderer.drawRect(addr rect)
 
   proc fillCircle*(
     renderer: Drawable2D, pos: Point, radius: int | float, style = "#000000"
   ) =
-    let color = parseColor(style).extractRGB()
+    let color = parseHtmlColor(style).rgba()
 
     let pos = applyTranslation(renderer, pos)
+    checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
     checkError renderer.getSdlRenderer.aacircleRGBA(
       pos.x.int16,
       pos.y.int16,
@@ -708,7 +717,7 @@ else:
       color.r.uint8,
       color.g.uint8,
       color.b.uint8,
-      255
+      color.a.uint8
     )
     checkError renderer.getSdlRenderer.filledCircleRGBA(
       pos.x.int16,
@@ -717,7 +726,7 @@ else:
       color.r.uint8,
       color.g.uint8,
       color.b.uint8,
-      255
+      color.a.uint8
     )
 
   proc drawImage*(
@@ -783,13 +792,14 @@ else:
 
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica", center = false) =
-    let color = parseColor(style).extractRGB()
+    let color = parseHtmlColor(style).rgba()
     let font =
       when renderer is Renderer2D:
         renderer.loadFont(font)
       else:
         renderer.renderer2D.loadFont(font)
-    let sdlColor = sdl2.color(color.r, color.g, color.b, 0)
+    let sdlColor = sdl2.color(color.r, color.g, color.b, color.a)
+    checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
 
     let textSurface = renderUtf8Blended(font, text, sdlColor)
     checkError textSurface
@@ -840,12 +850,13 @@ else:
 
   proc strokePath*(renderer: Drawable2D, style: string, lineWidth: int) =
     # TODO: This algorithm doesn't have the same semantics as HTML canvas
-    let color = parseColor(style).extractRGB()
+    let color = parseHtmlColor(style).rgba()
     for i in 0 ..< renderer.currentPath.len:
       if i == renderer.currentPath.len-1: break
       let next = i+1
       let first = applyTranslation(renderer, renderer.currentPath[i])
       let second = applyTranslation(renderer, renderer.currentPath[next])
+      checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
       renderer.getSdlRenderer.thickLineRGBA(
         first.x.int16,
         first.y.int16,
@@ -855,7 +866,7 @@ else:
         color.r.uint8,
         color.g.uint8,
         color.b.uint8,
-        255
+        color.a.uint8
       )
 
   proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
