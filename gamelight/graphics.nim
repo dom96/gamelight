@@ -26,6 +26,9 @@ type
   EventKind* = enum
     KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion
 
+  FileFormat* = enum
+    FileFormatSVG
+
 type
   Renderer2D* = ref object
     when isCanvas:
@@ -422,6 +425,15 @@ when isCanvas:
 
     renderer.context.restore()
 
+  proc drawImageFromMemory*(
+    renderer: Drawable2D, contents: string, pos: Point, width, height: int,
+    align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
+  ) =
+    # TODO: Other image formats. Assuming SVG here
+    let header = "data:image/svg+xml;charset=utf-8,"
+
+    drawImage(renderer, header & contents, pos, width, height, align, degrees)
+
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     renderer.context.drawImage(other.canvas, pos.x, pos.y, width, height)
 
@@ -729,19 +741,14 @@ else:
       color.a.uint8
     )
 
-  proc drawImage*(
-    renderer: Drawable2D, file: string, pos: Point, width, height: int,
+  proc drawImage(
+    renderer: Drawable2D, img: TexturePtr, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     # TODO: Don't load textures on each draw (!) plus implement SVG workaround:
     #  * control rastered scale by changing width/height param of SVG
     #  * https://bugzilla.libsdl.org/show_bug.cgi?id=4072
     assert width != 0 and height != 0
-    let file =
-      if file.isAbsolute(): file
-      else: getCurrentDir() / file
-    let img = loadTexture(renderer.getSdlRenderer, file)
-    defer: destroy img
     checkError img
 
     let pos = applyTranslation(renderer, adjustPos(width, height, pos, align))
@@ -754,6 +761,30 @@ else:
 
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
     checkError renderer.getSdlRenderer.copyEx(img, nil, addr destRect, degrees, addr center)
+
+  proc drawImage*(
+    renderer: Drawable2D, file: string, pos: Point, width, height: int,
+    align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
+  ) =
+    let file =
+      if file.isAbsolute(): file
+      else: getCurrentDir() / file
+    let img = loadTexture(renderer.getSdlRenderer, file)
+    checkError img
+    defer: destroy img
+
+    drawImage(renderer, img, pos, width, height, align, degrees)
+
+  proc drawImageFromMemory*(
+    renderer: Drawable2D, contents: string, pos: Point, width, height: int,
+    align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
+  ) =
+    let rw = rwFromMem(unsafeAddr contents[0], contents.len.cint)
+    defer: freeRW(rw)
+    let img = loadTexture_RW(renderer.getSdlRenderer, rw, 0)
+    checkError img
+
+    drawImage(renderer, img, pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     let pos = applyTranslation(renderer, pos)
