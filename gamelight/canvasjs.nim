@@ -28,6 +28,7 @@ type
     height*: int
     width*: int
     onload*: proc ()
+    complete*: bool
 
 proc newImage*(): Image {.importcpp: "new Image()".}
 

@@ -7,6 +7,7 @@ const
 when isCanvas:
   import dom, jsconsole
   import canvasjs
+  import base64
 else:
   import strutils, os
   import sdl2/[gfx, ttf, image]
@@ -414,7 +415,8 @@ when isCanvas:
     renderer.context.translate(int(-pos.x) - width div 2, int(-pos.y) - height div 2)
     if url in renderer.images:
       let img = renderer.images[url]
-      renderer.context.drawImage(img, pos.x, pos.y, width, height)
+      if img.complete:
+        renderer.context.drawImage(img, pos.x, pos.y, width, height)
     else:
       let img = newImage()
       img.src = url
@@ -430,9 +432,9 @@ when isCanvas:
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     # TODO: Other image formats. Assuming SVG here
-    let header = "data:image/svg+xml;charset=utf-8,"
+    let header = "data:image/svg+xml;base64,"
 
-    drawImage(renderer, header & contents, pos, width, height, align, degrees)
+    drawImage(renderer, header & base64.encode(contents), pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     renderer.context.drawImage(other.canvas, pos.x, pos.y, width, height)
