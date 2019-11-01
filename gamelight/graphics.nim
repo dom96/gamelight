@@ -1,4 +1,4 @@
-import sugar, math, tables, colors
+import sugar, math, tables, colors, os
 from lenientops import `/`
 
 const
@@ -13,7 +13,7 @@ else:
   import sdl2/[gfx, ttf, image]
   import sdl2 except Point
   import chroma
-import vec
+import vec, utils
 
 when isCanvas:
   type
@@ -534,8 +534,12 @@ else:
 
     var window: WindowPtr
     var renderer: RendererPtr
+    var flags =
+      SDL_WINDOW_SHOWN
+    if width == -1 and height == -1:
+      flags = flags or SDL_WINDOW_FULLSCREEN
     checkError createWindowAndRenderer(
-      width.cint, height.cint, SDL_WINDOW_SHOWN, window, renderer
+      width.cint, height.cint, flags, window, renderer
     )
 
     result = Renderer2D(
@@ -817,11 +821,16 @@ else:
 
     let key = (name, size)
     if key notin renderer.fontCache:
-      renderer.fontCache[key] = openFont(getCurrentDir() / "fonts" / name, size)
+      let fontPath =
+        when defined(ios):
+          $getResourcePathIOS(name.changeFileExt(""), "ttf")
+        else:
+          getCurrentDir() / "fonts" / name
+      renderer.fontCache[key] = openFont(fontPath, size)
 
     result = renderer.fontCache[key]
-    setFontStyle(result, fontStyle)
     checkError(result)
+    setFontStyle(result, fontStyle)
 
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica", center = false) =
@@ -930,7 +939,11 @@ else:
 
   # Accessors
   proc getWidth*(renderer: Drawable2D): int =
-    renderer.preferredWidth
+    var res: cint
+    checkError getRendererOutputSize(renderer.getSdlRenderer, addr res, nil)
+    return res
 
   proc getHeight*(renderer: Drawable2D): int =
-    renderer.preferredHeight
+    var res: cint
+    checkError getRendererOutputSize(renderer.getSdlRenderer, nil, addr res)
+    return res
