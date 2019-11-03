@@ -876,15 +876,46 @@ else:
       let first = applyTranslation(renderer, renderer.currentPath[i])
       let second = applyTranslation(renderer, renderer.currentPath[next])
       checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
-      drawThickLine(
-        renderer.getSdlRenderer,
-        first.x,
-        first.y,
-        second.x,# - (if i == 0 and first.y == second.y: 1 else: 0),
-        second.y,# - (if i == 0 and first.x == second.x: 1 else: 0),
-        lineWidth,
-        color
-      )
+      if first.x == second.x or first.y == second.y:
+        var first = first
+        var second = second
+        let isVertical = first.x == second.x
+        if not isVertical and second.x < first.x:
+          swap(first, second)
+        elif isVertical and second.y < first.y:
+          swap(first, second)
+
+        let width =
+          if not isVertical:
+            sqrt(distanceSquared(first, second).float)
+          else:
+            lineWidth.float
+        let height =
+          if isVertical:
+            sqrt(distanceSquared(first, second).float)
+          else:
+            lineWidth.float
+
+        var rect = (
+          x: cint(first.x - (if isVertical: lineWidth div 2 else: 0)),
+          y: cint(first.y - (if not isVertical: lineWidth div 2 else: 0)),
+          w: width.cint,
+          h: height.cint,
+        )
+        checkError setDrawColor(renderer.getSdlRenderer(), color.rgba().r, color.rgba().g, color.rgba().b, 255'u8)
+        checkError renderer.getSdlRenderer().fillRect(
+          rect
+        )
+      else:
+        drawThickLine(
+          renderer.getSdlRenderer,
+          first.x,
+          first.y,
+          second.x - (if i == 0 and first.y == second.y: 1 else: 0),
+          second.y - (if i == 0 and first.x == second.x: 1 else: 0),
+          lineWidth,
+          color
+        )
 
 
   proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
