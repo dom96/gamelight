@@ -18,9 +18,8 @@ proc setPixelColor(x, y, a: cint) {.exportc.} =
 
 proc setPixelColor*(renderer: RendererPtr, x, y: int, r, g, b, a: uint8) =
   # Alpha here is reversed. In SDL 255 means opaque, but we get 0 for that.
-  setPixelColor(x.cint, y.cint, a.cint)
-  # checkError setDrawColor(renderer, r, g, b, 255'u8-a)
-  # checkError drawPoint(renderer, x.cint, y.cint)
+  checkError setDrawColor(renderer, r, g, b, 255'u8-a)
+  checkError drawPoint(renderer, x.cint, y.cint)
 
 {.emit: """
 #define max(a, b) a > b ? a : b
@@ -56,10 +55,6 @@ proc plotLineWidth(x0, y0, x1, y1: cint, wd: cfloat) {.importc.}
 proc drawThickLine*(renderer: RendererPtr, x0, y0, x1, y1: int, wd: int, color: Color) =
   # Based on http://members.chello.at/~easyfilter/bresenham.html
   # https://gist.github.com/w8r/2f57de439a736b0a079b70ed24c9a246 (plotLineWidth)
-
-  if true:
-    plotLineWidth(x0.cint, y0.cint, x1.cint, y1.cint, wd.cfloat)
-    return
 
   let (r, g, b) = (color.rgba().r, color.rgba().g, color.rgba().b)
 

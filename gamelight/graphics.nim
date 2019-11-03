@@ -10,7 +10,7 @@ when isCanvas:
   import base64
 else:
   import strutils, os
-  import sdl2/[gfx, ttf, image]
+  import sdl2/[ttf, image]
   import sdl2 except Point
   import chroma
 import vec, utils
@@ -721,28 +721,8 @@ else:
   proc fillCircle*(
     renderer: Drawable2D, pos: Point, radius: int | float, style = "#000000"
   ) =
-    let color = parseHtmlColor(style).rgba()
-
-    let pos = applyTranslation(renderer, pos)
-    checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
-    # checkError renderer.getSdlRenderer.aacircleRGBA(
-    #   pos.x.int16,
-    #   pos.y.int16,
-    #   radius.int16,
-    #   color.r.uint8,
-    #   color.g.uint8,
-    #   color.b.uint8,
-    #   color.a.uint8
-    # )
-    # checkError renderer.getSdlRenderer.filledCircleRGBA(
-    #   pos.x.int16,
-    #   pos.y.int16,
-    #   radius.int16,
-    #   color.r.uint8,
-    #   color.g.uint8,
-    #   color.b.uint8,
-    #   color.a.uint8
-    # )
+    # TODO: Remove sdl2_gfx circle drawing because it's a crappy dependency.
+    renderer.fillRect(pos.x, pos.y, radius, radius, style)
 
   proc drawImage(
     renderer: Drawable2D, img: TexturePtr, pos: Point, width, height: int,
@@ -905,17 +885,7 @@ else:
         lineWidth,
         color
       )
-      # renderer.getSdlRenderer.thickLineRGBA(
-      #   first.x.int16,
-      #   first.y.int16,
-      #   second.x.int16 - (if i == 0 and first.y == second.y: 1 else: 0),
-      #   second.y.int16 - (if i == 0 and first.x == second.x: 1 else: 0),
-      #   lineWidth.uint8,
-      #   color.rgba().r.uint8,
-      #   color.rgba().g.uint8,
-      #   color.rgba().b.uint8,
-      #   color.rgba().a.uint8
-      # )
+
 
   proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
     let pos = applyTranslation(renderer, pos)
