@@ -521,11 +521,8 @@ when isCanvas:
     """.}
 else:
   # SDL2
+  import sdl2_utils
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
-
-  proc checkError(ret: ptr | SDL_Return | cint) =
-    if (when ret is ptr: ret.isNil elif ret is cint: ret < 0 else: ret != SdlSuccess):
-      raise newException(Exception, "SDL2 failure: " & $getError())
 
   checkError sdl2.init(INIT_EVERYTHING)
   checkError ttfInit()
@@ -586,9 +583,9 @@ else:
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
     var
       event = sdl2.defaultEvent
-      fpsman: FpsManager
-    fpsman.init()
-    fpsman.setFramerate(60)
+    #   fpsman: FpsManager
+    # fpsman.init()
+    # fpsman.setFramerate(60)
     renderer.lastFrameUpdate = getPerformanceCounter()
 
     block eventLoop:
@@ -621,7 +618,7 @@ else:
         onTick(elapsedTime.float)
 
         renderer.getSdlRenderer.present()
-        fpsman.delay
+        # fpsman.delay
 
     destroy renderer.getSdlRenderer
     destroy renderer.window
@@ -728,24 +725,24 @@ else:
 
     let pos = applyTranslation(renderer, pos)
     checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
-    checkError renderer.getSdlRenderer.aacircleRGBA(
-      pos.x.int16,
-      pos.y.int16,
-      radius.int16,
-      color.r.uint8,
-      color.g.uint8,
-      color.b.uint8,
-      color.a.uint8
-    )
-    checkError renderer.getSdlRenderer.filledCircleRGBA(
-      pos.x.int16,
-      pos.y.int16,
-      radius.int16,
-      color.r.uint8,
-      color.g.uint8,
-      color.b.uint8,
-      color.a.uint8
-    )
+    # checkError renderer.getSdlRenderer.aacircleRGBA(
+    #   pos.x.int16,
+    #   pos.y.int16,
+    #   radius.int16,
+    #   color.r.uint8,
+    #   color.g.uint8,
+    #   color.b.uint8,
+    #   color.a.uint8
+    # )
+    # checkError renderer.getSdlRenderer.filledCircleRGBA(
+    #   pos.x.int16,
+    #   pos.y.int16,
+    #   radius.int16,
+    #   color.r.uint8,
+    #   color.g.uint8,
+    #   color.b.uint8,
+    #   color.a.uint8
+    # )
 
   proc drawImage(
     renderer: Drawable2D, img: TexturePtr, pos: Point, width, height: int,
@@ -892,24 +889,33 @@ else:
 
   proc strokePath*(renderer: Drawable2D, style: string, lineWidth: int) =
     # TODO: This algorithm doesn't have the same semantics as HTML canvas
-    let color = parseHtmlColor(style).rgba()
+    let color = parseHtmlColor(style)
     for i in 0 ..< renderer.currentPath.len:
       if i == renderer.currentPath.len-1: break
       let next = i+1
       let first = applyTranslation(renderer, renderer.currentPath[i])
       let second = applyTranslation(renderer, renderer.currentPath[next])
       checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
-      renderer.getSdlRenderer.thickLineRGBA(
-        first.x.int16,
-        first.y.int16,
-        second.x.int16 - (if i == 0 and first.y == second.y: 1 else: 0),
-        second.y.int16 - (if i == 0 and first.x == second.x: 1 else: 0),
-        lineWidth.uint8,
-        color.r.uint8,
-        color.g.uint8,
-        color.b.uint8,
-        color.a.uint8
+      drawThickLine(
+        renderer.getSdlRenderer,
+        first.x,
+        first.y,
+        second.x,# - (if i == 0 and first.y == second.y: 1 else: 0),
+        second.y,# - (if i == 0 and first.x == second.x: 1 else: 0),
+        lineWidth,
+        color
       )
+      # renderer.getSdlRenderer.thickLineRGBA(
+      #   first.x.int16,
+      #   first.y.int16,
+      #   second.x.int16 - (if i == 0 and first.y == second.y: 1 else: 0),
+      #   second.y.int16 - (if i == 0 and first.x == second.x: 1 else: 0),
+      #   lineWidth.uint8,
+      #   color.rgba().r.uint8,
+      #   color.rgba().g.uint8,
+      #   color.rgba().b.uint8,
+      #   color.rgba().a.uint8
+      # )
 
   proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
     let pos = applyTranslation(renderer, pos)

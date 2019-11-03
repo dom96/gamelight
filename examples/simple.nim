@@ -9,6 +9,13 @@ proc onTick(renderer: Renderer2D, elapsedTime: float) =
   renderer.strokeRect(40, 40, 100, 100, "#8a8a8a")
   renderer.fillRect(45, 45, 90, 90, "#8a8a8a")
 
+  renderer.beginPath()
+  renderer.moveTo(400, 50)
+  renderer.lineTo(550, 60)
+  renderer.lineTo(450, 140)
+  renderer.closePath()
+  renderer.strokePath("#fdd96d", 30)
+
 proc onLoad() {.exportc.} =
   var renderer = newRenderer2D("canvas")
   renderer.onKeyDown =
