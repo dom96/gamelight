@@ -19,6 +19,8 @@ proc setPixelColor*(renderer: RendererPtr, x, y: int, r, g, b, a: uint8) =
 
 proc drawThickLine*(renderer: RendererPtr, x0, y0, x1, y1: int, wd: int, color: Color) =
   # Based on http://members.chello.at/~easyfilter/bresenham.html
+  # https://gist.github.com/w8r/2f57de439a736b0a079b70ed24c9a246 (plotLineWidth)
+
   let (r, g, b) = (color.rgba().r, color.rgba().g, color.rgba().b)
 
 
@@ -34,9 +36,8 @@ proc drawThickLine*(renderer: RendererPtr, x0, y0, x1, y1: int, wd: int, color: 
 
   let ed = if dx+dy == 0: 1.0 else: sqrt(float(dx*dx+dy*dy))
 
-  var wd = wd.float
+  var wd = (wd+1) / 2
   while true: # Pixel loop
-    wd = (wd+1) / 2 # TODO: Does this happen before?
     setPixelColor(
       renderer, x0, y0,
       r, g, b,
@@ -47,10 +48,9 @@ proc drawThickLine*(renderer: RendererPtr, x0, y0, x1, y1: int, wd: int, color: 
     x2 = x0
 
     if 2*e2 >= -dx: # x step
+      e2 += dy
+      y2 = y0
       while e2.float < ed*wd and (y1 != y2 or dx > dy):
-        e2 += dy
-        y2 = y0
-
         y2 += sy
         setPixelColor(
           renderer,
@@ -68,8 +68,8 @@ proc drawThickLine*(renderer: RendererPtr, x0, y0, x1, y1: int, wd: int, color: 
       x0 += sx
 
     if 2*e2 <= dy: # y step
+      e2 = dx-e2
       while e2.float < ed*wd and (x1 != x2 or dx < dy):
-        e2 = dx-e2
         x2 += sx
         setPixelColor(
           renderer,
