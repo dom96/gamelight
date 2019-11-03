@@ -15,6 +15,7 @@ proc onTick(renderer: Renderer2D, elapsedTime: float) =
   renderer.lineTo(450, 140)
   renderer.closePath()
   renderer.strokePath("#fdd96d", 30)
+  quit(1)
 
 proc onLoad() {.exportc.} =
   var renderer = newRenderer2D("canvas")
