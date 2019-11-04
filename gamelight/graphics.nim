@@ -25,7 +25,8 @@ when isCanvas:
 
 type
   EventKind* = enum
-    KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion
+    KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion,
+    FingerMotion, FingerUp, FingerDown
 
   FileFormat* = enum
     FileFormatSVG
@@ -606,6 +607,15 @@ else:
           of EventType.MouseMotion:
             if not renderer.events[EventKind.MouseMotion].isNil:
               renderer.events[EventKind.MouseMotion](event)
+          of EventType.FingerMotion:
+            if not renderer.events[EventKind.FingerMotion].isNil:
+              renderer.events[EventKind.FingerMotion](event)
+          of EventType.FingerUp:
+            if not renderer.events[EventKind.FingerUp].isNil:
+              renderer.events[EventKind.FingerUp](event)
+          of EventType.FingerDown:
+            if not renderer.events[EventKind.FingerDown].isNil:
+              renderer.events[EventKind.FingerDown](event)
           else: discard
 
         let frameTime = getPerformanceCounter()
@@ -627,7 +637,9 @@ else:
     KeyboardEvent* = KeyboardEventObj
     MouseButtonEvent* = MouseButtonEventObj
     MouseMotionEvent* = MouseMotionEventObj
-    TouchEvent* = TouchFingerEventObj
+    TouchEvent* = object
+      ev: TouchFingerEventObj
+      winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
 
   proc keyCode*(event: KeyboardEvent): int =
     event.keysym.sym.int
@@ -635,13 +647,38 @@ else:
   proc key*(event: KeyboardEvent): string =
     $getScancodeName(event.keysym.scancode)
 
-  proc preventDefault*(event: KeyboardEvent | MouseButtonEvent | MouseMotionEvent) = discard
+  proc preventDefault*(event: KeyboardEvent | MouseButtonEvent | MouseMotionEvent | TouchEvent) = discard
 
   proc clientX*(event: MouseButtonEvent | MouseMotionEvent): int =
     event.x.int
 
   proc clientY*(event: MouseButtonEvent | MouseMotionEvent): int =
     event.y.int
+
+  type
+    Touch* = object
+      identifier*: FingerID
+      clientX*, clientY*: float
+      force*: float
+
+  proc touches*(event: TouchEvent): seq[Touch] =
+    let count = getNumTouchFingers(event.ev.touchID)
+    for i in 0 ..< count:
+      let finger = getTouchFinger(event.ev.touchID, i)
+      checkError finger
+      result.add(Touch(
+        identifier: finger.id,
+        clientX: finger.x * event.winWidth.cfloat,
+        clientY: finger.y * event.winHeight.cfloat,
+        force: finger.pressure
+      ))
+    if count == 0:
+      result.add(Touch(
+        identifier: event.ev.touchId,
+        clientX: event.ev.x * event.winWidth.cfloat,
+        clientY: event.ev.y * event.winHeight.cfloat,
+        force: event.ev.pressure
+      ))
 
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEventObj)) =
     renderer.events[EventKind.KeyDown] =
@@ -667,14 +704,31 @@ else:
         let ev = cast[sdl2.MouseMotionEventObj](event)
         onMouseMotion(ev)
 
+  proc toTouchEvent(renderer: Renderer2D, ev: TouchFingerEventObj): TouchEvent =
+    let size = getSize(renderer.getSdlRenderer())
+    TouchEvent(
+      ev: ev,
+      winWidth: size.width,
+      winHeight: size.height
+    )
+
   proc `onTouchMove=`*(renderer: Renderer2D, onTouchMove: proc (event: TouchEvent)) =
-    discard # TODO: Might be worth implementing these for SDL.
+    renderer.events[EventKind.FingerMotion] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.TouchFingerEventObj](event)
+        onTouchMove(toTouchEvent(renderer, ev))
 
   proc `onTouchStart=`*(renderer: Renderer2D, onTouchStart: proc (event: TouchEvent)) =
-    discard
+    renderer.events[EventKind.FingerDown] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.TouchFingerEventObj](event)
+        onTouchStart(toTouchEvent(renderer, ev))
 
   proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
-    discard
+    renderer.events[EventKind.FingerUp] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.TouchFingerEventObj](event)
+        onTouchEnd(toTouchEvent(renderer, ev))
 
   # Drawing utils
 
