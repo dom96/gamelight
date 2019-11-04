@@ -820,7 +820,7 @@ else:
     defer: freeRW(rw)
     let img = loadTexture_RW(renderer.getSdlRenderer, rw, 0)
     checkError img
-
+    defer: destroy img
     drawImage(renderer, img, pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
