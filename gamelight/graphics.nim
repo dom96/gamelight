@@ -54,6 +54,8 @@ type
     when isCanvas:
       positionedElements: seq[PositionedElement]
       images: Table[string, Image]
+    else:
+      texturesFromFile, texturesFromString: Table[string, TexturePtr]
 
   Surface2D* = ref object ## Off-screen rendering canvas.
     when isCanvas:
@@ -806,21 +808,25 @@ else:
     let file =
       if file.isAbsolute(): file
       else: getCurrentDir() / file
-    let img = loadTexture(renderer.getSdlRenderer, file)
-    checkError img
-    defer: destroy img
+    if file notin renderer.texturesFromFile:
+      renderer.texturesFromFile[file] = loadTexture(renderer.getSdlRenderer, file)
+      checkError renderer.texturesFromFile[file]
+      # TODO: We should limit the number of items in our cache.
 
+    let img = renderer.texturesFromFile[file]
     drawImage(renderer, img, pos, width, height, align, degrees)
 
   proc drawImageFromMemory*(
     renderer: Drawable2D, contents: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
-    let rw = rwFromMem(unsafeAddr contents[0], contents.len.cint)
-    defer: freeRW(rw)
-    let img = loadTexture_RW(renderer.getSdlRenderer, rw, 0)
-    checkError img
-    defer: destroy img
+    if contents notin renderer.texturesFromString:
+      let rw = rwFromMem(unsafeAddr contents[0], contents.len.cint)
+      defer: freeRW(rw)
+      renderer.texturesFromString[contents] = loadTexture_RW(renderer.getSdlRenderer, rw, 0)
+      checkError renderer.texturesFromString[contents]
+      # TODO: We should limit the number of items in our cache.
+    let img = renderer.texturesFromString[contents]
     drawImage(renderer, img, pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
