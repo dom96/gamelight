@@ -706,25 +706,29 @@ else:
     renderer.events[EventKind.KeyDown] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.KeyboardEventObj](event)
-        onKeyDown(ev)
+        if not onKeyDown.isNil:
+          onKeyDown(ev)
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEventObj)) =
     renderer.events[EventKind.MouseButtonDown] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.MouseButtonEventObj](event)
-        onMouseButtonDown(ev)
+        if not onMouseButtonDown.isNil:
+          onMouseButtonDown(ev)
 
   proc `onMouseButtonUp=`*(renderer: Renderer2D, onMouseButtonUp: proc (event: MouseButtonEventObj)) =
     renderer.events[EventKind.MouseButtonUp] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.MouseButtonEventObj](event)
-        onMouseButtonUp(ev)
+        if not onMouseButtonUp.isNil:
+          onMouseButtonUp(ev)
 
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEventObj)) =
     renderer.events[EventKind.MouseMotion] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.MouseMotionEventObj](event)
-        onMouseMotion(ev)
+        if not onMouseMotion.isNil:
+          onMouseMotion(ev)
 
   proc toTouchEvent(renderer: Renderer2D, ev: TouchFingerEventObj): TouchEvent =
     let size = getSize(renderer.getSdlRenderer())
@@ -738,26 +742,30 @@ else:
     renderer.events[EventKind.FingerMotion] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.TouchFingerEventObj](event)
-        onTouchMove(toTouchEvent(renderer, ev))
+        if not onTouchMove.isNil:
+          onTouchMove(toTouchEvent(renderer, ev))
 
   proc `onTouchStart=`*(renderer: Renderer2D, onTouchStart: proc (event: TouchEvent)) =
     renderer.events[EventKind.FingerDown] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.TouchFingerEventObj](event)
-        onTouchStart(toTouchEvent(renderer, ev))
+        if not onTouchStart.isNil:
+          onTouchStart(toTouchEvent(renderer, ev))
 
   proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
     renderer.events[EventKind.FingerUp] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.TouchFingerEventObj](event)
-        onTouchEnd(toTouchEvent(renderer, ev))
+        if not onTouchEnd.isNil:
+          onTouchEnd(toTouchEvent(renderer, ev))
 
   proc getWidth*(renderer: Drawable2D): int
   proc getHeight*(renderer: Drawable2D): int
   proc `onResize=`*(renderer: Renderer2D, onResize: proc (width, height: int)) =
     renderer.events[EventKind.SizeChanged] =
       proc (event: sdl2.Event) =
-        onResize(renderer.getWidth, renderer.getHeight)
+        if not onResize.isNil:
+          onResize(renderer.getWidth, renderer.getHeight)
 
   # Drawing utils
 
