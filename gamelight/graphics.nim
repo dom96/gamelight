@@ -26,7 +26,7 @@ when isCanvas:
 type
   EventKind* = enum
     KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion,
-    FingerMotion, FingerUp, FingerDown
+    FingerMotion, FingerUp, FingerDown, SizeChanged
 
   FileFormat* = enum
     FileFormatSVG
@@ -484,6 +484,11 @@ when isCanvas:
   proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
     window.addEventListener("touchend", (ev: Event) => onTouchEnd(ev.TouchEvent))
 
+  proc `onResize=`*(renderer: Renderer2D, onResize: proc (width, height: int)) =
+    window.addEventListener("resize",
+      (ev: Event) => onResize(renderer.canvas.width, renderer.canvas.height)
+    )
+
   proc moveTo*(renderer: Drawable2D, x, y: float | int) =
     renderer.context.moveTo(x, y)
 
@@ -629,6 +634,10 @@ else:
           of EventType.FingerDown:
             if not renderer.events[EventKind.FingerDown].isNil:
               renderer.events[EventKind.FingerDown](event)
+          of EventType.WindowEvent:
+            if cast[WindowEventObj](event).event == WindowEvent_SizeChanged:
+              if not renderer.events[EventKind.SizeChanged].isNil:
+                renderer.events[EventKind.SizeChanged](event)
           else: discard
 
         let frameTime = getPerformanceCounter()
@@ -742,6 +751,13 @@ else:
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.TouchFingerEventObj](event)
         onTouchEnd(toTouchEvent(renderer, ev))
+
+  proc getWidth*(renderer: Drawable2D): int
+  proc getHeight*(renderer: Drawable2D): int
+  proc `onResize=`*(renderer: Renderer2D, onResize: proc (width, height: int)) =
+    renderer.events[EventKind.SizeChanged] =
+      proc (event: sdl2.Event) =
+        onResize(renderer.getWidth, renderer.getHeight)
 
   # Drawing utils
 
