@@ -1,4 +1,4 @@
-import sugar, math, tables, colors, os
+import sugar, math, tables, colors, os, options
 from lenientops import `/`
 
 const
@@ -47,6 +47,7 @@ type
       currentPath: seq[Point[int]]
       fontCache: Table[(string, cint), FontPtr]
       lastFrameUpdate: uint64
+      clippingMask: Option[Surface2D]
     preferredWidth: int
     preferredHeight: int
     rotation: float
@@ -575,6 +576,9 @@ else:
     )
     checkError result.texture
 
+  proc getRenderer(renderer: Renderer2D): Renderer2D = renderer
+  proc getRenderer(surface: Surface2D): Renderer2D = surface.renderer2D
+
   proc getSdlRenderer(renderer: Renderer2D): RendererPtr =
     checkError renderer.sdlRenderer.setRenderTarget(nil)
     return renderer.sdlRenderer
@@ -582,6 +586,13 @@ else:
   proc getSdlRenderer(surface: Surface2D): RendererPtr =
     checkError surface.renderer2D.sdlRenderer.setRenderTarget(surface.texture)
     return surface.renderer2D.sdlRenderer
+
+  proc getSdlTexture(surface: Renderer2D): TexturePtr =
+    result = surface.sdlRenderer.getRenderTarget()
+    checkError result
+
+  proc getSdlTexture(surface: Surface2D): TexturePtr =
+    return surface.texture
 
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
     var
@@ -802,32 +813,34 @@ else:
     checkError renderer.getSdlRenderer.copyEx(img, nil, addr destRect, degrees, addr center)
 
   proc drawImage*(
-    renderer: Drawable2D, file: string, pos: Point, width, height: int,
+    drawable: Drawable2D, file: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     let file =
       if file.isAbsolute(): file
       else: getCurrentDir() / file
-    if file notin renderer.texturesFromFile:
-      renderer.texturesFromFile[file] = loadTexture(renderer.getSdlRenderer, file)
-      checkError renderer.texturesFromFile[file]
+    if file notin drawable.getRenderer().texturesFromFile:
+      drawable.getRenderer().texturesFromFile[file] =
+        loadTexture(drawable.getSdlRenderer, file)
+      checkError drawable.getRenderer().texturesFromFile[file]
       # TODO: We should limit the number of items in our cache.
 
-    let img = renderer.texturesFromFile[file]
-    drawImage(renderer, img, pos, width, height, align, degrees)
+    let img = drawable.getRenderer().texturesFromFile[file]
+    drawImage(drawable, img, pos, width, height, align, degrees)
 
   proc drawImageFromMemory*(
-    renderer: Drawable2D, contents: string, pos: Point, width, height: int,
+    drawable: Drawable2D, contents: string, pos: Point, width, height: int,
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
-    if contents notin renderer.texturesFromString:
+    if contents notin drawable.getRenderer().texturesFromString:
       let rw = rwFromMem(unsafeAddr contents[0], contents.len.cint)
       defer: freeRW(rw)
-      renderer.texturesFromString[contents] = loadTexture_RW(renderer.getSdlRenderer, rw, 0)
-      checkError renderer.texturesFromString[contents]
+      drawable.getRenderer().texturesFromString[contents] =
+        loadTexture_RW(drawable.getSdlRenderer, rw, 0)
+      checkError drawable.getRenderer().texturesFromString[contents]
       # TODO: We should limit the number of items in our cache.
-    let img = renderer.texturesFromString[contents]
-    drawImage(renderer, img, pos, width, height, align, degrees)
+    let img = drawable.getRenderer().texturesFromString[contents]
+    drawImage(drawable, img, pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     let pos = applyTranslation(renderer, pos)

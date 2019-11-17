@@ -4,12 +4,11 @@
 <svg version="1.1"
 	 id="Layer_1" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg"
 	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="500px" height="500px"
-	 viewBox="0 0 10 10" enable-background="new 0 0 10 10" xml:space="preserve">
+	 viewBox="0 0 10 10" xml:space="preserve">
 <g>
-	<path fill="#7F0808" d="M5,10h5V5C10,7.762,7.762,10,5,10z"/>
-	<path fill="#7F0808" d="M5,0c2.762,0,5,2.239,5,5V0H5z"/>
-	<path fill="#7F0808" d="M0,5v5h5C2.239,10,0,7.762,0,5z"/>
-	<path fill="#7F0808" d="M5,0H0v5C0,2.239,2.239,0,5,0z"/>
+	<path fill="#062a68" d="M5,10h5V5C10,7.762,7.762,10,5,10z"/>
+	<path fill="#062a68" d="M5,0c2.762,0,5,2.239,5,5V0H5z"/>
+	<path fill="#062a68" d="M0,5v5h5C2.239,10,0,7.762,0,5z"/>
+	<path fill="#062a68" d="M5,0H0v5C0,2.239,2.239,0,5,0z"/>
 </g>
-<path fill="#FFFFFF" d="M18.333,5.583"/>
 </svg>
