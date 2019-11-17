@@ -536,7 +536,7 @@ else:
     var window: WindowPtr
     var renderer: RendererPtr
     var flags =
-      SDL_WINDOW_SHOWN
+      SDL_WINDOW_SHOWN or SDL_WINDOW_RESIZABLE
     if width == -1 and height == -1:
       flags = flags or SDL_WINDOW_FULLSCREEN
     checkError createWindowAndRenderer(
