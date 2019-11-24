@@ -13,7 +13,7 @@ else:
   import sdl2/[ttf, image]
   import sdl2 except Point
   import chroma
-import vec, utils
+import vec
 
 when isCanvas:
   type
@@ -1073,3 +1073,13 @@ else:
     var res: cint
     checkError getRendererOutputSize(renderer.getSdlRenderer, nil, addr res)
     return res
+
+when defined(js):
+  proc setWindowTitle*(window: Renderer2D, title: string) =
+    let ctitle = cstring(title)
+    {.emit: """
+      document.title = `ctitle`;
+    """.}
+else:
+  proc setWindowTitle*(renderer: Renderer2D, title: string) =
+    renderer.window.setTitle(title)
