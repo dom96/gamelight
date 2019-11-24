@@ -14,6 +14,7 @@ type
 
     font* {.importc.}: cstring
     textAlign* {.importc.}: cstring
+    globalCompositeOperation* {.importc.}: cstring
 
   ContextAttributes* = ref object
     alpha* {.importc.}: bool
@@ -52,6 +53,9 @@ proc getContext*(canvasElement: Element, contextType: cstring,
     contextAttributes = ContextAttributes(alpha: false)): CanvasRenderingContext
 
 proc fillRect*(context: CanvasRenderingContext,
+    x, y, width, height: int | float)
+
+proc clearRect*(context: CanvasRenderingContext,
     x, y, width, height: int | float)
 
 proc strokeRect*(context: CanvasRenderingContext,

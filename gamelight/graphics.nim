@@ -230,6 +230,9 @@ when isCanvas:
     result.canvas.height = height
     result.context = result.canvas.getContext("2d")
 
+  proc destroy*(surface: Surface2D) =
+    discard # No-op for JS.
+
   proc strokeLine*(renderer: Drawable2D, start, finish: Point, width = 1,
       style = "#000000", shadowBlur = 0, shadowColor = "#000000") =
     renderer.context.beginPath()
@@ -239,6 +242,7 @@ when isCanvas:
     renderer.context.strokeStyle = style
     renderer.context.shadowBlur = shadowBlur
     renderer.context.shadowColor = shadowColor
+    renderer.context.closePath()
     renderer.context.stroke()
 
     renderer.context.shadowBlur = 0
@@ -257,9 +261,17 @@ when isCanvas:
     renderer.context.strokeStyle = style
     renderer.context.shadowBlur = shadowBlur
     renderer.context.shadowColor = shadowColor
+    renderer.context.closePath()
     renderer.context.stroke()
 
     renderer.context.shadowBlur = 0
+
+  proc clear*(
+    renderer: Drawable2D, style = "#000000"
+  ) =
+    renderer.context.beginPath()
+    renderer.context.fillStyle = style
+    renderer.context.clearRect(0, 0, renderer.canvas.width, renderer.canvas.height)
 
   proc fillRect*[T: SomeNumber, Y: SomeNumber](
     renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
@@ -449,6 +461,7 @@ when isCanvas:
     renderer.context.beginPath()
     renderer.context.arc(pos.x, pos.y, radius, 0, 2 * math.PI)
     renderer.context.fillStyle = style
+    renderer.context.closePath()
     renderer.context.fill()
 
   proc onFrame(renderer: Renderer2D, frameTime: float, onTick: proc (elapsedTime: float)) =
@@ -580,6 +593,9 @@ else:
       preferredHeight: height
     )
     checkError result.texture
+
+  proc destroy*(surface: Surface2D) =
+    destroy(surface.texture)
 
   proc getRenderer(renderer: Renderer2D): Renderer2D = renderer
   proc getRenderer(surface: Surface2D): Renderer2D = surface.renderer2D
@@ -789,8 +805,14 @@ else:
     checkError renderer.getSdlRenderer.setDrawColor(
       color.r.uint8, color.g.uint8, color.b.uint8, color.a.uint8
     )
-    if color.a != 0:
-      checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
+    checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
+
+  proc clear*(
+    renderer: Drawable2D, style = "#000000"
+  ) =
+    setColor(renderer, style)
+    checkError renderer.getSdlTexture().setTextureBlendMode(BlendMode_BLEND)
+    checkError renderer.getSdlRenderer.clear()
 
   proc fillRect*[T: SomeNumber, Y: SomeNumber](
     renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
