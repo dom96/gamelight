@@ -10,4 +10,4 @@ license       = "MIT"
 requires "nim >= 0.16.0"
 
 requires "sdl2"
-requires "chroma >= 0.1.1"
+requires "chroma >= 0.1.0"
