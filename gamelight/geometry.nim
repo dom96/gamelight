@@ -46,6 +46,29 @@ proc intersect*[T](line1, line2: LineSegment[T], epsilon = 0.001): bool =
   var foo: Point[T]
   return intersect(line1, line2, foo, epsilon)
 
+proc intersect*[T](lines: openarray[LineSegment[T]], p: Point[T]): bool =
+  # Based on https://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
+  template `{}`(lines: openarray[LineSegment[T]], i: int): Point[T] =
+    if i mod 2 == 0:
+      lines[i div 2].start
+    else:
+      lines[i div 2].finish
+
+  let num = len(lines)*2
+  var i = 0
+  var j = num - 1
+  result = false
+  for i in 0 ..< num:
+    let cond1 = ((lines{i}.y > p.y) != (lines{j}.y > p.y))
+    let cond2 = (
+      p.x <
+        lines{i}.x + (lines{j}.x - lines{i}.x) *
+        (p.y - lines{i}.y) / (lines{j}.y - lines{i}.y)
+    )
+    if cond1 and cond2:
+      result = not result
+    j = i
+
 proc intersect*(rect: Rect, p: Point): bool =
   return p.x >= rect.left and p.x <= (rect.left + rect.width) and
       p.y >= rect.top and p.y <= (rect.top + rect.height)
