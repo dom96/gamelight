@@ -16,7 +16,7 @@ converter toLineSegment*(x: tuple[start: (int, int),
                                   finish: Point[int]]): LineSegment[int] =
   return (x.start.toPoint, x.finish)
 
-proc intersect*(line1, line2: LineSegment, point: var Point,
+proc intersect*[T](line1, line2: LineSegment[T], point: var Point[T],
     epsilon = 0.001): bool =
   ## Based on algorithm described by Paul Bourke.
   ## http://paulbourke.net/geometry/pointlineplane/
@@ -38,8 +38,8 @@ proc intersect*(line1, line2: LineSegment, point: var Point,
   let mub = numerb / denom
 
   if mua >= 0 and mua <= 1 and mub >= 0 and mub <= 1:
-    point.x = int(x1.float + (mua * float(x2 - x1)))
-    point.y = int(y1.float + (mua * float(y2 - y1)))
+    point.x = T(x1.T + T(mua.T * (x2 - x1)))
+    point.y = T(y1.T + T(mua.T * (y2 - y1)))
     return true
 
 proc intersect*[T](line1, line2: LineSegment[T], epsilon = 0.001): bool =
@@ -98,9 +98,9 @@ proc intersect*(rect: Rect, line: LineSegment): bool =
   return top.intersect(line) or left.intersect(line) or
       bottom.intersect(line) or right.intersect(line)
 
-proc distanceSquared*(line: LineSegment, point: Point): int =
+proc distanceSquared*[T](line: LineSegment[T], point: Point[T]): T =
   # http://stackoverflow.com/a/1501725/492186
-  proc dist2(v, w: Point): int = ((v.x - w.x) ^ 2) + ((v.y - w.y) ^ 2)
+  proc dist2(v, w: Point[T]): T = ((v.x - w.x) ^ 2) + ((v.y - w.y) ^ 2)
 
   let lsq = dist2(line.start, line.finish)
   if lsq == 0: return dist2(point, line.start)
@@ -109,8 +109,8 @@ proc distanceSquared*(line: LineSegment, point: Point): int =
       (point.y - line.start.y) * (line.finish.y - line.start.y)) / lsq
   t = max(0, min(1, t))
 
-  let x = int(line.start.x.float + t * float(line.finish.x - line.start.x))
-  let y = int(line.start.y.float + t * float(line.finish.y - line.start.y))
+  let x = T(line.start.x + t.T) * T(line.finish.x - line.start.x)
+  let y = T(line.start.y + t.T) * T(line.finish.y - line.start.y)
   return dist2(point, (x, y))
 
 proc distance*(line: LineSegment, point: Point): float =
@@ -159,6 +159,52 @@ proc angle*(direction: Direction): float =
 proc intersect*(a, b: Circle): bool =
   # https://stackoverflow.com/a/1736741/492186
   return distanceSquared(a[0], b[0]) <= (a[1]+b[1])^2
+
+proc intersect*(circle: Circle, p: Point): bool =
+  # http://www.jeffreythompson.org/collision-detection/point-circle.php
+  let distX = p.x - circle.pos.x
+  let distY = p.y - circle.pos.y
+  let distance = sqrt((distX*distX) + (distY*distY))
+
+  return distance <= circle.radius
+
+proc intersect*(line: LineSegment, c: Circle): bool =
+  # Wow, a very nice guide: http://www.jeffreythompson.org/collision-detection/line-circle.php
+
+  # Either end of the line inside the circle?
+  let inside1 = intersect(c, line.start)
+  let inside2 = intersect(c, line.finish)
+  if inside1 or inside2: return true
+
+  # get length of the line
+  let lenX = line.start.x - line.finish.x
+  let lenY = line.start.y - line.finish.y;
+  let len = sqrt((lenX*lenX) + (lenY*lenY))
+
+  # get dot product of the line and circle
+  let dot = (
+    ((c.pos.x-line.start.x)*(line.finish.x-line.start.x)) +
+    ((c.pos.y-line.start.y)*(line.finish.y-line.start.y))
+  ) / pow(len, 2)
+
+  # find the closest point on the line
+  let closestX = line.start.x + (dot * (line.finish.x-line.start.x))
+  let closestY = line.start.y + (dot * (line.finish.y-line.start.y))
+
+  # is this point actually on the line segment?
+  # if so keep going, but if not, return false
+  let onSegment = intersect(line, Point[float](x: closestX, y: closestY))
+  if not onSegment: return false
+
+  # get distance to closest point
+  let distX = closestX - c.pos.x
+  let distY = closestY - c.pos.y
+  let distance = sqrt((distX*distX) + (distY*distY))
+
+  return distance <= c.radius
+
+proc area*(a: Circle): float =
+  math.PI * pow(a.radius, 2)
 
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
