@@ -806,12 +806,13 @@ else:
       color.r.uint8, color.g.uint8, color.b.uint8, color.a.uint8
     )
     checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
+    if renderer is Surface2D:
+      checkError setTextureBlendMode(renderer.getSdlTexture, BlendMode_BLEND)
 
   proc clear*(
     renderer: Drawable2D, style = "#000000"
   ) =
     setColor(renderer, style)
-    checkError renderer.getSdlTexture().setTextureBlendMode(BlendMode_BLEND)
     checkError renderer.getSdlRenderer.clear()
 
   proc fillRect*[T: SomeNumber, Y: SomeNumber](
