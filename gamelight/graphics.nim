@@ -303,6 +303,11 @@ when isCanvas:
     {.emit: """
       `result`.`width` = `renderer`.`context`.measureText(`text`).width;
     """.}
+    # Use the width of 'M' as an estimation of the height of the text:
+    # https://stackoverflow.com/a/5042628/492186
+    {.emit: """
+      `result`.`height` =  `renderer`.`context`.measureText("M").width;
+    """.}
 
   proc setTranslation*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
