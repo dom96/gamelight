@@ -10,8 +10,10 @@ when isCanvas:
   import base64
 else:
   import strutils, os
-  import sdl2/[ttf, image]
+  import sdl2/ttf except FontPtr
+  import sdl2/image
   import sdl2 except Point
+  import SDL_FontCache
   import chroma
 import vec
 
@@ -45,7 +47,7 @@ type
       translationFactor: Point[int]
       savedFactors: seq[(Point[float], Point[int])]
       currentPath: seq[Point[int]]
-      fontCache: Table[(string, cint), FontPtr]
+      fontCache: Table[(string, uint32, string), FontPtr]
       lastFrameUpdate: uint64
       clippingMask: Option[Surface2D]
     preferredWidth: int
@@ -893,8 +895,8 @@ else:
 
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
     checkError renderer.getSdlRenderer.copyEx(other.texture, nil, addr destRect, 0, nil)
-
-  proc loadFont(renderer: Renderer2D, font: string): FontPtr =
+    
+  proc loadFont(renderer: Renderer2D, font: string, color: string): FontPtr =
     let s = font.split(" ")
     var fontStyle: cint = TTF_STYLE_NORMAL
     var index = 0
@@ -911,63 +913,50 @@ else:
 
     assert s[index].endsWith("px")
 
-    let size = parseInt(s[index][0 .. ^3]).cint
+    let size = parseInt(s[index][0 .. ^3]).uint32
     index.inc()
     let name = s[index].replace(" ", "_") & ".ttf"
 
-    let key = (name, size)
+    let key = (name, size, color)
     if key notin renderer.fontCache:
       let fontPath =
         when defined(ios):
           $getResourcePathIOS(name.changeFileExt(""), "ttf")
         else:
           getCurrentDir() / "fonts" / name
-      renderer.fontCache[key] = openFont(fontPath, size)
+      renderer.fontCache[key] = createFont()
+      checkError renderer.fontCache[key].loadFont(renderer.getSdlRenderer, fontPath, size, makeColor(255, 0, 0, 255), fontStyle)
 
     result = renderer.fontCache[key]
     checkError(result)
-    setFontStyle(result, fontStyle)
 
+  
+  
+    
   proc fillText*(renderer: Drawable2D, text: string, pos: Point,
       style = "#000000", font = "12px Helvetica", center = false) =
     let color = parseHtmlColor(style).rgba()
     let font =
       when renderer is Renderer2D:
-        renderer.loadFont(font)
+        renderer.loadFont(font, style)
       else:
-        renderer.renderer2D.loadFont(font)
-    let sdlColor = sdl2.color(color.r, color.g, color.b, color.a)
+        renderer.renderer2D.loadFont(font, style)
     checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
 
-    let textSurface = renderUtf8Blended(font, text, sdlColor)
-    checkError textSurface
-    defer: freeSurface(textSurface)
-
-    let texture = createTextureFromSurface(renderer.getSdlRenderer, textSurface)
-    checkError texture
-    defer: destroy(texture)
-    let width = textSurface.w
-    let height = textSurface.h
-
     let pos = applyTranslation(renderer, pos)
-    var destRect = sdl2.rect(
-      pos.x.cint - (if center: width div 2 else: 0),
-      pos.y.cint - (if center: height div 2 else: 0),
-      width, height
-    )
-    # echo("Render: ", destRect, " ", text)
-    checkError sdl2.copy(renderer.getSdlRenderer, texture, nil, addr destRect)
+    discard draw(font, renderer.getSdlRenderer, pos.x.cfloat, pos.y.cfloat, text)
 
   proc getTextMetrics*(
     renderer: Drawable2D, text: string, font = "12px Helvetica"
   ): TextMetrics =
     let font =
       when renderer is Renderer2D:
-        renderer.loadFont(font)
+        renderer.loadFont(font, "#000000")
       else:
-        renderer.renderer2D.loadFont(font)
+        renderer.renderer2D.loadFont(font, "#000000")
 
-    checkError sizeUtf8(font, text, addr result.width, addr result.height)
+    result.width = getWidth(font, text).cint
+    result.height = getHeight(font, text).cint
 
   # Path drawing
   proc lineTo*(renderer: Drawable2D, x, y: float | int) =

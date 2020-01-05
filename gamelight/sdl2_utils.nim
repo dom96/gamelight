@@ -4,8 +4,8 @@ import sdl2 except Color
 import chroma
 
 
-proc checkError*(ret: ptr | SDL_Return | cint) =
-  if (when ret is ptr: ret.isNil elif ret is cint: ret < 0 else: ret != SdlSuccess):
+proc checkError*(ret: ptr | pointer | SDL_Return | cint | uint8) =
+  if (when ret is ptr or ret is pointer: ret.isNil elif ret is cint or ret is uint8: ret < 0 else: ret != SdlSuccess):
     raise newException(Exception, "SDL2 failure: " & $getError())
 
 proc getSize*(renderer: RendererPtr): tuple[width, height: int] =

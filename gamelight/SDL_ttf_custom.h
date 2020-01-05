@@ -1,0 +1,1 @@
+typedef struct TTF_Font {} TTF_Font;

@@ -1,0 +1,3 @@
+[submodule "gamelight/SDL_FontCache"]
+	path = gamelight/SDL_FontCache
+	url = https://github.com/grimfang4/SDL_FontCache
