@@ -50,8 +50,8 @@ type
       sdlRenderer: RendererPtr
       events: array[EventKind, proc (evt: sdl2.Event)]
       scalingFactor: Point[float]
-      translationFactor: Point[int]
-      savedFactors: seq[(Point[float], Point[int])]
+      translationFactor*: Point[float]
+      savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
       fontCache: Table[(string, int), Font]
       glyphCache: Table[(string, string, float, float, string), GlyphEntry]
@@ -95,8 +95,8 @@ proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Poi
   case align
   of Center:
     result = Point[T](
-      x: T(pos.x.int - (width div 2)),
-      y: T(pos.y.int - (height div 2))
+      x: T(pos.x - T(width / 2)),
+      y: T(pos.y - T(height / 2))
     )
   of TopLeft:
     discard
@@ -799,13 +799,13 @@ else:
 
   # Drawing utils
 
-  proc applyTranslation[T: SomeNumber](renderer: Drawable2D, x, y: T): (cint, cint) =
+  proc applyTranslation[T: SomeNumber](renderer: Drawable2D, x, y: T): (T, T) =
     return (
-      cint(x + renderer.translationFactor.x.T),
-      cint(y + renderer.translationFactor.y.T)
+      x + renderer.translationFactor.x.T,
+      y + renderer.translationFactor.y.T
     )
 
-  proc applyTranslation[T: SomeNumber](renderer: Drawable2D, pos: Point[T]): Point[T] =
+  proc applyTranslation*[T: SomeNumber](renderer: Drawable2D, pos: Point[T]): Point[T] =
     return Point[T](
       x: pos.x + renderer.translationFactor.x.T,
       y: pos.y + renderer.translationFactor.y.T
@@ -834,7 +834,7 @@ else:
   ) =
     setColor(renderer, style)
     let (x, y) = applyTranslation(renderer, x, y)
-    var rect = (x, y, width.cint, height.cint)
+    var rect = (x.cint, y.cint, width.cint, height.cint)
     checkError renderer.getSdlRenderer.fillRect(addr rect)
 
   proc strokeRect*[T: SomeNumber, Y: SomeNumber](
@@ -1099,7 +1099,7 @@ else:
     renderer.getSdlRenderer.setScale(x, y)
 
   proc translate*(renderer: Drawable2D, x, y: float) =
-    renderer.translationFactor = vec.Point[int](x: x.int, y: y.int)
+    renderer.translationFactor = vec.Point[float](x: x, y: y)
 
   proc save*(renderer: Drawable2D) =
     checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
@@ -1109,7 +1109,7 @@ else:
     checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
     let (scalingFactor, translationFactor) =
       if renderer.savedFactors.len > 0: renderer.savedFactors.pop()
-      else: (Point[float](x: 1, y: 1), Point[int](x: 0, y: 0))
+      else: (Point[float](x: 1, y: 1), Point[float](x: 0, y: 0))
     renderer.scalingFactor = scalingFactor
     renderer.getSdlRenderer.setScale(renderer.scalingFactor.x, renderer.scalingFactor.y)
     renderer.translationFactor = translationFactor
