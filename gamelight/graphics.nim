@@ -10,9 +10,9 @@ when isCanvas:
   import base64
 else:
   import strutils, os
-  import sdl2/[ttf, image]
+  import sdl2/[image]
   import sdl2 except Point
-  import chroma
+  import chroma, typography, flippy
 import vec
 
 when isCanvas:
@@ -31,6 +31,14 @@ type
   FileFormat* = enum
     FileFormatSVG
 
+
+when not isCanvas:
+  type
+    GlyphEntry = object
+      image: Image
+      texture: TexturePtr
+      glyphOffset: Point[float]
+
 type
   Renderer2D* = ref object
     when isCanvas:
@@ -45,7 +53,8 @@ type
       translationFactor: Point[int]
       savedFactors: seq[(Point[float], Point[int])]
       currentPath: seq[Point[int]]
-      fontCache: Table[(string, cint), FontPtr]
+      fontCache: Table[(string, int), Font]
+      glyphCache: Table[(string, float, float, string), GlyphEntry]
       lastFrameUpdate: uint64
       clippingMask: Option[Surface2D]
     preferredWidth: int
@@ -549,10 +558,10 @@ when isCanvas:
 else:
   # SDL2
   import sdl2_utils
+  from vmath import nil
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
 
   checkError sdl2.init(INIT_EVERYTHING)
-  checkError ttfInit()
   proc newRenderer2D*(id: string, width = 640, height = 480,
                       hidpi = false): Renderer2D =
 
@@ -900,26 +909,34 @@ else:
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
     checkError renderer.getSdlRenderer.copyEx(other.texture, nil, addr destRect, 0, nil)
 
-  proc loadFont(renderer: Renderer2D, font: string): FontPtr =
+  proc loadFont(renderer: Renderer2D, font: string): Font =
     let s = font.split(" ")
-    var fontStyle: cint = TTF_STYLE_NORMAL
+    var isBold = false
+    var isItalic = false
     var index = 0
     while index < s.len:
       if s[index].endsWith("px"): break
       case s[index].toLower()
       of "bold":
-        fontStyle = fontStyle or TTF_STYLE_BOLD
+        isBold = true
       of "italic":
-        fontStyle = fontStyle or TTF_STYLE_ITALIC
+        isItalic = true
       else:
         assert false
       index.inc()
 
     assert s[index].endsWith("px")
 
-    let size = parseInt(s[index][0 .. ^3]).cint
+    let size = parseInt(s[index][0 .. ^3])
     index.inc()
-    let name = s[index].replace(" ", "_") & ".ttf"
+    var filename = s[index]
+    if isBold and isItalic:
+      filename.add " Bold Italic"
+    elif isBold:
+      filename.add " Bold"
+    elif isItalic:
+      filename.add " Italic"
+    let name = filename & ".ttf"
 
     let key = (name, size)
     if key notin renderer.fontCache:
@@ -928,41 +945,68 @@ else:
           $getResourcePathIOS(name.changeFileExt(""), "ttf")
         else:
           getCurrentDir() / "fonts" / name
-      renderer.fontCache[key] = openFont(fontPath, size)
+      renderer.fontCache[key] = readFontTtf(fontPath)
+      renderer.fontCache[key].size = size.float
 
     result = renderer.fontCache[key]
-    checkError(result)
-    setFontStyle(result, fontStyle)
 
-  proc fillText*(renderer: Drawable2D, text: string, pos: Point,
+  proc toSdlTexture(drawable: Drawable2D, image: Image): TexturePtr =
+    # convert a flippy image to a SDL texture
+    const
+      rmask = uint32 0x000000ff
+      gmask = uint32 0x0000ff00
+      bmask = uint32 0x00ff0000
+      amask = uint32 0xff000000
+    var serface = createRGBSurface(
+      0, cint image.width, cint image.height, 32, rmask, gmask, bmask, amask
+    )
+    serface.pixels = addr image.data[0]
+    var texture = drawable.getSdlRenderer().createTextureFromSurface(serface)
+    return texture
+
+  proc fillText*[T](renderer: Drawable2D, text: string, pos: Point[T],
       style = "#000000", font = "12px Helvetica", center = false) =
     let color = parseHtmlColor(style).rgba()
-    let font =
-      when renderer is Renderer2D:
-        renderer.loadFont(font)
-      else:
-        renderer.renderer2D.loadFont(font)
-    let sdlColor = sdl2.color(color.r, color.g, color.b, color.a)
-    checkError setDrawBlendMode(renderer.getSdlRenderer, BlendMode_BLEND)
+    let font = renderer.getRenderer().loadFont(font)
 
-    let textSurface = renderUtf8Blended(font, text, sdlColor)
-    checkError textSurface
-    defer: freeSurface(textSurface)
+    let layout = font.typeset(text)
+    let textBounds = textBounds(layout)
+    let pos = applyTranslation(renderer, pos) -
+      Point[T](
+        x: if center: T(textBounds.x / 2) else: 0,
+        y: if center: T(textBounds.y / 2) else: 0
+      )
+    for layoutPos in layout:
+      var font = layoutPos.font
+      if layoutPos.character in font.glyphs:
+        let key = (layoutPos.character, font.size, layoutPos.subPixelShift, $color)
+        if key notin renderer.getRenderer().glyphCache:
+          var glyph = font.glyphs[layoutPos.character]
+          var glyphOffset: vmath.Vec2
+          let image = font.getGlyphImage(
+            glyph, glyphOffset,
+            subPixelShift=layoutPos.subPixelShift,
+            color=color
+          )
+          renderer.getRenderer().glyphCache[key] = GlyphEntry(
+            image: image,
+            texture: renderer.toSdlTexture(image),
+            glyphOffset: Point[float](
+              x: glyphOffset.x,
+              y: glyphOffset.y
+            )
+          )
 
-    let texture = createTextureFromSurface(renderer.getSdlRenderer, textSurface)
-    checkError texture
-    defer: destroy(texture)
-    let width = textSurface.w
-    let height = textSurface.h
-
-    let pos = applyTranslation(renderer, pos)
-    var destRect = sdl2.rect(
-      pos.x.cint - (if center: width div 2 else: 0),
-      pos.y.cint - (if center: height div 2 else: 0),
-      width, height
-    )
-    # echo("Render: ", destRect, " ", text)
-    checkError sdl2.copy(renderer.getSdlRenderer, texture, nil, addr destRect)
+        let glyphEntry = renderer.getRenderer().glyphCache[key]
+        var destRect = sdl2.rect(
+          cint(pos.x.float + layoutPos.rect.x + glyphEntry.glyphOffset.x),
+          cint(pos.y.float + textBounds.y - 1 + glyphEntry.glyphOffset.y),
+          cint glyphEntry.image.width,
+          cint glyphEntry.image.height
+        )
+        checkError sdl2.copy(
+          renderer.getSdlRenderer, glyphEntry.texture, nil, addr destRect
+        )
 
   proc getTextMetrics*(
     renderer: Drawable2D, text: string, font = "12px Helvetica"
@@ -973,7 +1017,8 @@ else:
       else:
         renderer.renderer2D.loadFont(font)
 
-    checkError sizeUtf8(font, text, addr result.width, addr result.height)
+    let size = font.textBounds(text)
+    return TextMetrics(width: size.x.ceil.cint, height: size.y.ceil.cint)
 
   # Path drawing
   proc lineTo*(renderer: Drawable2D, x, y: float | int) =
