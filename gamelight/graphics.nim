@@ -1,4 +1,4 @@
-import sugar, math, tables, colors, os, options
+import sugar, math, tables, colors, os, options, hashes
 from lenientops import `/`
 
 const
@@ -65,7 +65,8 @@ type
       positionedElements: seq[PositionedElement]
       images: Table[string, Image]
     else:
-      texturesFromFile, texturesFromString: Table[string, TexturePtr]
+      texturesFromFile: Table[string, TexturePtr]
+      texturesFromString: Table[Hash, TexturePtr]
 
   Surface2D* = ref object ## Off-screen rendering canvas.
     when isCanvas:
@@ -891,16 +892,22 @@ else:
 
   proc drawImageFromMemory*(
     drawable: Drawable2D, contents: string, pos: Point, width, height: int,
-    align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
+    align: ImageAlignment = ImageAlignment.Center, degrees: float = 0,
+    customHash = none[Hash]()
   ) =
-    if contents notin drawable.getRenderer().texturesFromString:
+    let hash =
+      if customHash.isSome():
+        customHash.get()
+      else:
+        hash(contents)
+    if hash notin drawable.getRenderer().texturesFromString:
       let rw = rwFromMem(unsafeAddr contents[0], contents.len.cint)
       defer: freeRW(rw)
-      drawable.getRenderer().texturesFromString[contents] =
+      drawable.getRenderer().texturesFromString[hash] =
         loadTexture_RW(drawable.getSdlRenderer, rw, 0)
-      checkError drawable.getRenderer().texturesFromString[contents]
+      checkError drawable.getRenderer().texturesFromString[hash]
       # TODO: We should limit the number of items in our cache.
-    let img = drawable.getRenderer().texturesFromString[contents]
+    let img = drawable.getRenderer().texturesFromString[hash]
     drawImage(drawable, img, pos, width, height, align, degrees)
 
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
