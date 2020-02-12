@@ -105,3 +105,9 @@ proc toDirVec*(angle: float): Point[float] =
     x: math.cos(degToRad(angle)),
     y: math.sin(degToRad(angle))
   )
+
+proc vec2*(x, y: int): Point[int] =
+  Point[int](x: x, y: y)
+
+proc vec2*(x, y: float): Point[float] =
+  Point[float](x: x, y: y)
