@@ -562,7 +562,7 @@ else:
   from vmath import nil
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
 
-  checkError sdl2.init(INIT_EVERYTHING)
+  checkError sdl2.init(INIT_VIDEO)
   proc newRenderer2D*(id: string, width = 640, height = 480,
                       hidpi = false): Renderer2D =
 
@@ -630,61 +630,82 @@ else:
   proc getSdlTexture(surface: Surface2D): TexturePtr =
     return surface.texture
 
+  when defined(emscripten):
+    proc emscripten_set_main_loop*(fun: proc() {.cdecl.}, fps,
+      simulate_infinite_loop: cint) {.header: "<emscripten.h>".}
+
+    proc emscripten_cancel_main_loop*() {.header: "<emscripten.h>".}
+
+  proc loop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)): bool =
+    var event = sdl2.defaultEvent
+    while pollEvent(event):
+      case event.kind
+      of QuitEvent:
+        return true
+      of EventType.KeyDown:
+        if not renderer.events[EventKind.KeyDown].isNil:
+          renderer.events[EventKind.KeyDown](event)
+      of EventType.MouseButtonDown:
+        if not renderer.events[EventKind.MouseButtonDown].isNil:
+          renderer.events[EventKind.MouseButtonDown](event)
+      of EventType.MouseButtonUp:
+        if not renderer.events[EventKind.MouseButtonUp].isNil:
+          renderer.events[EventKind.MouseButtonUp](event)
+      of EventType.MouseMotion:
+        if not renderer.events[EventKind.MouseMotion].isNil:
+          renderer.events[EventKind.MouseMotion](event)
+      of EventType.FingerMotion:
+        if not renderer.events[EventKind.FingerMotion].isNil:
+          renderer.events[EventKind.FingerMotion](event)
+      of EventType.FingerUp:
+        if not renderer.events[EventKind.FingerUp].isNil:
+          renderer.events[EventKind.FingerUp](event)
+      of EventType.FingerDown:
+        if not renderer.events[EventKind.FingerDown].isNil:
+          renderer.events[EventKind.FingerDown](event)
+      of EventType.WindowEvent:
+        if cast[WindowEventObj](event).event == WindowEvent_SizeChanged:
+          if not renderer.events[EventKind.SizeChanged].isNil:
+            renderer.events[EventKind.SizeChanged](event)
+      else: discard
+
+    let frameTime = getPerformanceCounter()
+    let elapsedTime = ((frameTime - renderer.lastFrameUpdate)*1000) / getPerformanceFrequency().float
+    renderer.lastFrameUpdate = frameTime
+
+    checkError renderer.getSdlRenderer.setDrawColor(0,0,0,255)
+    checkError renderer.getSdlRenderer.clear()
+
+    onTick(elapsedTime.float)
+
+    renderer.getSdlRenderer.present()
+    # fpsman.delay
+
+  when defined(emscripten):
+    var globalRenderer: Renderer2D
+    var globalOnTick: proc (elapsedTime: float)
+    proc emccLoop() {.cdecl.} =
+      if globalRenderer.isNil: return
+      if loop(globalRenderer, globalOnTick):
+        emscripten_cancel_main_loop()
+
   proc startLoop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)) =
-    var
-      event = sdl2.defaultEvent
     #   fpsman: FpsManager
     # fpsman.init()
     # fpsman.setFramerate(60)
-    renderer.lastFrameUpdate = getPerformanceCounter()
+    when defined(emscripten):
+      assert globalRenderer.isNil, "One renderer at a time supported."
+      globalRenderer = renderer
+      globalOnTick = onTick
+      emscripten_set_main_loop(emccLoop, 0, 1)
+    else:
+      renderer.lastFrameUpdate = getPerformanceCounter()
 
-    block eventLoop:
       while true:
-        while pollEvent(event):
-          case event.kind
-          of QuitEvent:
-            break eventLoop
-          of EventType.KeyDown:
-            if not renderer.events[EventKind.KeyDown].isNil:
-              renderer.events[EventKind.KeyDown](event)
-          of EventType.MouseButtonDown:
-            if not renderer.events[EventKind.MouseButtonDown].isNil:
-              renderer.events[EventKind.MouseButtonDown](event)
-          of EventType.MouseButtonUp:
-            if not renderer.events[EventKind.MouseButtonUp].isNil:
-              renderer.events[EventKind.MouseButtonUp](event)
-          of EventType.MouseMotion:
-            if not renderer.events[EventKind.MouseMotion].isNil:
-              renderer.events[EventKind.MouseMotion](event)
-          of EventType.FingerMotion:
-            if not renderer.events[EventKind.FingerMotion].isNil:
-              renderer.events[EventKind.FingerMotion](event)
-          of EventType.FingerUp:
-            if not renderer.events[EventKind.FingerUp].isNil:
-              renderer.events[EventKind.FingerUp](event)
-          of EventType.FingerDown:
-            if not renderer.events[EventKind.FingerDown].isNil:
-              renderer.events[EventKind.FingerDown](event)
-          of EventType.WindowEvent:
-            if cast[WindowEventObj](event).event == WindowEvent_SizeChanged:
-              if not renderer.events[EventKind.SizeChanged].isNil:
-                renderer.events[EventKind.SizeChanged](event)
-          else: discard
+        if loop(renderer, onTick): break
 
-        let frameTime = getPerformanceCounter()
-        let elapsedTime = ((frameTime - renderer.lastFrameUpdate)*1000) / getPerformanceFrequency().float
-        renderer.lastFrameUpdate = frameTime
-
-        checkError renderer.getSdlRenderer.setDrawColor(0,0,0,255)
-        checkError renderer.getSdlRenderer.clear()
-
-        onTick(elapsedTime.float)
-
-        renderer.getSdlRenderer.present()
-        # fpsman.delay
-
-    destroy renderer.getSdlRenderer
-    destroy renderer.window
+      destroy renderer.getSdlRenderer
+      destroy renderer.window
 
   type
     KeyboardEvent* = KeyboardEventObj

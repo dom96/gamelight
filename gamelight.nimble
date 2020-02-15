@@ -13,3 +13,8 @@ requires "sdl2"
 requires "chroma >= 0.1.0"
 requires "https://github.com/dom96/typography#master"
 requires "flippy >= 0.4.0"
+
+task exampleem, "Builds examples for emscripten":
+  exec "rm -r examples/emscripten"
+  exec "nim c -d:emscripten examples/clipping.nim"
+  exec "nim c -r examples/rename_all.nim clipping"
