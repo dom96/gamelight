@@ -69,11 +69,11 @@ type
       texturesFromString: Table[Hash, TexturePtr]
 
   Surface2D* = ref object ## Off-screen rendering canvas.
+    renderer2D: Renderer2D
     when isCanvas:
       canvas: EmbedElement
       context*: CanvasRenderingContext
     else:
-      renderer2D: Renderer2D
       texture: TexturePtr
       scalingFactor: Point[float]
       translationFactor: Point[int]
@@ -90,6 +90,9 @@ type
 type
   ImageAlignment* = enum
     Center, TopLeft
+
+proc getRenderer(renderer: Renderer2D): Renderer2D = renderer
+proc getRenderer(surface: Surface2D): Renderer2D = surface.renderer2D
 
 proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Point[T] =
   result = pos
@@ -234,7 +237,7 @@ when isCanvas:
 
   proc newSurface2D*(renderer: Renderer2D, width: int, height: int): Surface2D =
     result = Surface2D(
-      canvas: document.createElement("canvas").EmbedElement
+      renderer2D: renderer, canvas: document.createElement("canvas").EmbedElement
     )
     result.canvas.width = width
     result.canvas.height = height
@@ -444,8 +447,8 @@ when isCanvas:
     renderer.context.translate(pos.x.int + width div 2, int(pos.y) + height div 2)
     renderer.context.rotate(degToRad(degrees))
     renderer.context.translate(int(-pos.x) - width div 2, int(-pos.y) - height div 2)
-    if url in renderer.images:
-      let img = renderer.images[url]
+    if url in renderer.getRenderer().images:
+      let img = renderer.getRenderer().images[url]
       if img.complete:
         renderer.context.drawImage(img, pos.x, pos.y, width, height)
     else:
@@ -454,7 +457,7 @@ when isCanvas:
       img.onload =
         proc () =
           renderer.context.drawImage(img, pos.x, pos.y, width, height)
-      renderer.images[url] = img
+      renderer.getRenderer().images[url] = img
 
     renderer.context.restore()
 
@@ -611,9 +614,6 @@ else:
 
   proc destroy*(surface: Surface2D) =
     destroy(surface.texture)
-
-  proc getRenderer(renderer: Renderer2D): Renderer2D = renderer
-  proc getRenderer(surface: Surface2D): Renderer2D = surface.renderer2D
 
   proc getSdlRenderer(renderer: Renderer2D): RendererPtr =
     checkError renderer.sdlRenderer.setRenderTarget(nil)
@@ -900,12 +900,14 @@ else:
     align: ImageAlignment = ImageAlignment.Center, degrees: float = 0
   ) =
     let file =
-      if file.isAbsolute(): file
-      else: getCurrentDir() / file
+      when defined(android): file
+      else:
+        if file.isAbsolute(): file
+        else: getCurrentDir() / file
     if file notin drawable.getRenderer().texturesFromFile:
       drawable.getRenderer().texturesFromFile[file] =
         loadTexture(drawable.getSdlRenderer, file)
-      checkError drawable.getRenderer().texturesFromFile[file]
+      checkError drawable.getRenderer().texturesFromFile[file], file
       # TODO: We should limit the number of items in our cache.
 
     let img = drawable.getRenderer().texturesFromFile[file]
@@ -971,6 +973,9 @@ else:
       let fontPath =
         when defined(ios):
           $getResourcePathIOS(name.changeFileExt(""), "ttf")
+        elif defined(android):
+          # TODO: Need to use SDL_rwops and pass FileStream to Typography lib.
+          $androidGetInternalStoragePath() / "assets" / "fonts" / name
         else:
           getCurrentDir() / "fonts" / name
       renderer.fontCache[key] = readFontTtf(fontPath)

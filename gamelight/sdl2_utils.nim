@@ -4,9 +4,13 @@ import sdl2 except Color
 import chroma
 
 
-proc checkError*(ret: ptr | SDL_Return | cint) =
+proc checkError*(ret: ptr | SDL_Return | cint, file: string = "") =
   if (when ret is ptr: ret.isNil elif ret is cint: ret < 0 else: ret != SdlSuccess):
-    raise newException(Exception, "SDL2 failure: " & $getError())
+    let err = getError()
+    let extraInfo =
+      if file.len > 0: " (Could not read: " & file & ")"
+      else: ""
+    raise newException(Exception, "SDL2 failure: " & (if err.isNil: "nil" else: $err) & extraInfo)
 
 proc getSize*(renderer: RendererPtr): tuple[width, height: int] =
   var w, h: cint
