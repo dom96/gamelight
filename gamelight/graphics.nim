@@ -561,7 +561,7 @@ when isCanvas:
     """.}
 else:
   # SDL2
-  import sdl2_utils
+  import sdl2_utils, sdl2_rw_stream
   from vmath import nil
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
 
@@ -966,7 +966,7 @@ else:
       filename.add " Bold"
     elif isItalic:
       filename.add " Italic"
-    let name = filename & ".ttf"
+    let name = filename.toLower() & ".ttf"
 
     let key = (name, size)
     if key notin renderer.fontCache:
@@ -974,11 +974,14 @@ else:
         when defined(ios):
           $getResourcePathIOS(name.changeFileExt(""), "ttf")
         elif defined(android):
-          # TODO: Need to use SDL_rwops and pass FileStream to Typography lib.
-          $androidGetInternalStoragePath() / "assets" / "fonts" / name
+          "fonts" / name
         else:
           getCurrentDir() / "fonts" / name
-      renderer.fontCache[key] = readFontTtf(fontPath)
+      when defined(android):
+        renderer.fontCache[key] = readFontTtf(newSdlFileStream(fontPath))
+      else:
+        renderer.fontCache[key] = readFontTtf(fontPath)
+
       renderer.fontCache[key].size = size.float
 
     result = renderer.fontCache[key]
