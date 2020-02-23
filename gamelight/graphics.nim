@@ -572,7 +572,7 @@ else:
     var window: WindowPtr
     var renderer: RendererPtr
     var flags =
-      SDL_WINDOW_SHOWN or SDL_WINDOW_RESIZABLE
+      SDL_WINDOW_SHOWN or SDL_WINDOW_RESIZABLE or SDL_WINDOW_ALLOW_HIGHDPI
     if width == -1 and height == -1:
       flags = flags or SDL_WINDOW_FULLSCREEN
     checkError createWindowAndRenderer(
@@ -629,6 +629,30 @@ else:
 
   proc getSdlTexture(surface: Surface2D): TexturePtr =
     return surface.texture
+
+  proc getDPI*(renderer: Renderer2D): float =
+    ## Returns the DPI ratio for the current screen the `renderer`'s window is in.
+    ##
+    ## This will return 1.0 when DPI is set to the default for the platform.
+    ## For High DPI displays it's likely to be 2.0 or more.
+    let index = getDisplayIndex(renderer.window)
+    checkError index
+    var ddpi, hdpi, vdpi = cfloat(0.0)
+    checkError getDisplayDPI(index, addr ddpi, addr hdpi, addr vdpi)
+
+    let defaultDPI =
+      when defined(windows):
+        96.0
+      elif defined(android):
+        160.0
+      elif defined(ios):
+        163.0
+      elif defined(macosx):
+        72.0
+      else:
+        vdpi
+
+    return vdpi/defaultDPI
 
   when defined(emscripten):
     proc emscripten_set_main_loop*(fun: proc() {.cdecl.}, fps,
