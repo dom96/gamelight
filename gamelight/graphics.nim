@@ -630,12 +630,17 @@ else:
   proc getSdlTexture(surface: Surface2D): TexturePtr =
     return surface.texture
 
-  proc getDPI*(renderer: Renderer2D): float =
+  proc getDPI*(renderer: Drawable2D): float =
     ## Returns the DPI ratio for the current screen the `renderer`'s window is in.
     ##
     ## This will return 1.0 when DPI is set to the default for the platform.
     ## For High DPI displays it's likely to be 2.0 or more.
-    let index = getDisplayIndex(renderer.window)
+    let index = getDisplayIndex(
+      when renderer is Renderer2D:
+        renderer.window
+      elif renderer is Surface2D:
+        renderer.renderer2D.window
+    )
     checkError index
     var ddpi, hdpi, vdpi = cfloat(0.0)
     checkError getDisplayDPI(index, addr ddpi, addr hdpi, addr vdpi)
