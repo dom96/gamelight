@@ -4,8 +4,8 @@ import sdl2 except Color
 import chroma
 
 
-proc checkError*(ret: ptr | SDL_Return | cint, file: string = "") =
-  if (when ret is ptr: ret.isNil elif ret is cint: ret < 0 else: ret != SdlSuccess):
+proc checkError*(ret: ptr | SDL_Return | cint | bool, file: string = "") =
+  if (when ret is ptr: ret.isNil elif ret is bool: not ret elif ret is cint: ret < 0 else: ret != SdlSuccess):
     let err = getError()
     let extraInfo =
       if file.len > 0: " (Could not read: " & file & ")"

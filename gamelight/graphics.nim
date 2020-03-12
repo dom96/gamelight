@@ -26,7 +26,8 @@ when isCanvas:
 type
   EventKind* = enum
     KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion,
-    FingerMotion, FingerUp, FingerDown, SizeChanged
+    FingerMotion, FingerUp, FingerDown, SizeChanged,
+    UserEvent
 
   FileFormat* = enum
     FileFormatSVG
@@ -520,6 +521,9 @@ when isCanvas:
       (ev: Event) => onResize(renderer.canvas.width, renderer.canvas.height)
     )
 
+  proc `onUserEvent=`*(renderer: Renderer2D, onUserEvent: proc (data: array[56-sizeof(uint32), byte])) =
+    discard # TODO:
+
   proc moveTo*(renderer: Drawable2D, x, y: float | int) =
     renderer.context.moveTo(x, y)
 
@@ -696,7 +700,11 @@ else:
         if cast[WindowEventObj](event).event == WindowEvent_SizeChanged:
           if not renderer.events[EventKind.SizeChanged].isNil:
             renderer.events[EventKind.SizeChanged](event)
-      else: discard
+      else:
+        let evNum = event.kind.uint32
+        if evNum > EventType.UserEvent.uint32 and evNum < EventType.LastEvent.uint32:
+          if not renderer.events[EventKind.UserEvent].isNil:
+            renderer.events[EventKind.UserEvent](event)
 
     let frameTime = getPerformanceCounter()
     let elapsedTime = ((frameTime - renderer.lastFrameUpdate)*1000) / getPerformanceFrequency().float
@@ -847,6 +855,23 @@ else:
       proc (event: sdl2.Event) =
         if not onResize.isNil:
           onResize(renderer.getWidth, renderer.getHeight)
+
+  type
+    UserEventData* = object
+      code: int32
+      data1: pointer
+      data2: pointer
+    SDLUserEvent = object
+      kind: uint32
+      timestamp: uint32
+      windowID: uint32
+      user: UserEventData
+      padding: array[40-sizeof(pointer)*2, byte]
+  proc `onUserEvent=`*(renderer: Renderer2D, onUserEvent: proc (data: UserEventData)) =
+    renderer.events[EventKind.UserEvent] =
+      proc (event: sdl2.Event) =
+        if not onUserEvent.isNil:
+          onUserEvent(cast[SDLUserEvent](event).user)
 
   # Drawing utils
 
@@ -1189,6 +1214,18 @@ else:
     var res: cint
     checkError getRendererOutputSize(renderer.getSdlRenderer, nil, addr res)
     return res
+
+  # Other
+  {.push stacktrace:off.}
+  proc signalUserEvent*(data: UserEventData) =
+    let eventType = registerEvents(1)
+    checkError eventType < (high(uint32) - 1)
+
+    var event: SDLUserEvent
+    event.kind = eventType
+    event.user = data
+    checkError pushEvent(cast[ptr Event](addr event))
+  {.pop.}
 
 when defined(js):
   proc setWindowTitle*(window: Renderer2D, title: string) =
