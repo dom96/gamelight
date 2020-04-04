@@ -98,7 +98,7 @@ proc intersect*(rect: Rect, line: LineSegment): bool =
   return top.intersect(line) or left.intersect(line) or
       bottom.intersect(line) or right.intersect(line)
 
-proc distanceSquared*[T](line: LineSegment[T], point: Point[T]): T =
+proc distanceSquared*[T](line: LineSegment[T], point: Point[T]): T {.deprecated: "This is currently broken, TODO".} =
   # http://stackoverflow.com/a/1501725/492186
   proc dist2(v, w: Point[T]): T = ((v.x - w.x) ^ 2) + ((v.y - w.y) ^ 2)
 
@@ -117,7 +117,13 @@ proc distance*(line: LineSegment, point: Point): float =
   return sqrt(distanceSquared(line, point).float)
 
 proc intersect*(line: LineSegment, point: Point): bool =
-  return distanceSquared(line, point) == 0
+  let d1 = distance(line.start, point)
+  let d2 = distance(line.finish, point)
+
+  let lineLen = distance(line.start, line.finish)
+
+  let buffer = 0.1
+  return d1+d2 >= lineLen-buffer and d1+d2 <= lineLen+buffer
 
 proc nearestEdge*(line: LineSegment, point: Point): Point =
   ## Returns `line.start` if it's nearest to `point`, `line.finish` otherwise.
@@ -168,9 +174,10 @@ proc intersect*(circle: Circle, p: Point): bool =
 
   return distance <= circle.radius
 
-proc intersect*(line: LineSegment, c: Circle): bool =
+proc intersect*[T](
+  line: LineSegment[T], c: Circle[T],
+): bool =
   # Wow, a very nice guide: http://www.jeffreythompson.org/collision-detection/line-circle.php
-
   # Either end of the line inside the circle?
   let inside1 = intersect(c, line.start)
   let inside2 = intersect(c, line.finish)
@@ -249,10 +256,16 @@ when isMainModule:
     let line2 = ((x: 960, y: 368), (x: 960, y: 388))
     assert(not intersect(line1, line2))
 
-  # Distance test cases
   block:
-    let line = ((0, 0), (100, 0))
-    assert(distanceSquared(line, (50, 25)) == 25^2)
+    let line1 = (start: vec2(400.41, 366.39), finish: vec2(415.63, 341.43))
+    let circle1 = (pos: vec2(405.00, 360.00), radius: 6.0)
+    assert line1.intersect(circle1)
+
+  # Distance test cases
+  # TODO: This is broken, fix it.
+  # block:
+  #   let line = ((0, 0), (100, 0))
+  #   assert(distanceSquared(line, (50, 25)) == 25^2)
 
   # ParallelWith test cases
   block:

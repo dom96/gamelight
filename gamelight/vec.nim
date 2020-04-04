@@ -65,6 +65,8 @@ proc distanceSquared*[T](point: Point[float], point2: Point[T]): float =
 proc distanceSquared*[T](point: Point[T], point2: Point[float]): float {.inline.} =
   return distanceSquared(point2, point)
 
+proc distance*[T](a, b: Point[T]): float = sqrt(distanceSquared(a,b))
+
 proc isOrigin*(point: Point): bool =
   return point.x == 0 and point.y == 0
 
