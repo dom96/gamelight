@@ -14,6 +14,7 @@ else:
   import sdl2 except Point
   import chroma, typography, flippy
 import vec
+from geometry import nil
 
 when isCanvas:
   type
@@ -563,11 +564,24 @@ when isCanvas:
       region.rect(`pos`.`x`, `pos`.`y`, `width`, `height`);
       `renderer`.`context`.clip(region, "nonzero");
     """.}
+
+  proc startTextInput*[T](rect: geometry.Rect[T]) =
+    discard
+
+  proc stopTextInput*() = discard
 else:
   # SDL2
   import sdl2_utils, sdl2_rw_stream
   from vmath import nil
   export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
+
+  type
+    KeyboardEvent* = KeyboardEventObj
+    MouseButtonEvent* = MouseButtonEventObj
+    MouseMotionEvent* = MouseMotionEventObj
+    TouchEvent* = object
+      ev: TouchFingerEventObj
+      winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
 
   checkError sdl2.init(INIT_VIDEO)
   proc newRenderer2D*(id: string, width = 640, height = 480,
@@ -669,6 +683,7 @@ else:
 
     proc emscripten_cancel_main_loop*() {.header: "<emscripten.h>".}
 
+  proc keyCode*(event: KeyboardEvent): int
   proc loop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)): bool =
     var event = sdl2.defaultEvent
     while pollEvent(event):
@@ -676,7 +691,9 @@ else:
       of QuitEvent:
         return true
       of EventType.KeyDown:
-        if not renderer.events[EventKind.KeyDown].isNil:
+        let ev = cast[KeyboardEventObj](event)
+        let skip = isTextInputActive() and ev.keyCode notin {17, 18, 8, 16, 13, 93}
+        if not renderer.events[EventKind.KeyDown].isNil and not skip:
           renderer.events[EventKind.KeyDown](event)
       of EventType.MouseButtonDown:
         if not renderer.events[EventKind.MouseButtonDown].isNil:
@@ -700,6 +717,10 @@ else:
         if cast[WindowEventObj](event).event == WindowEvent_SizeChanged:
           if not renderer.events[EventKind.SizeChanged].isNil:
             renderer.events[EventKind.SizeChanged](event)
+      of EventType.TextEditing: discard # Not needed?
+      of EventType.TextInput:
+        if not renderer.events[EventKind.KeyDown].isNil and isTextInputActive():
+          renderer.events[EventKind.KeyDown](event)
       else:
         let evNum = event.kind.uint32
         if evNum > EventType.UserEvent.uint32 and evNum < EventType.LastEvent.uint32:
@@ -744,19 +765,22 @@ else:
       destroy renderer.getSdlRenderer
       destroy renderer.window
 
-  type
-    KeyboardEvent* = KeyboardEventObj
-    MouseButtonEvent* = MouseButtonEventObj
-    MouseMotionEvent* = MouseMotionEventObj
-    TouchEvent* = object
-      ev: TouchFingerEventObj
-      winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
-
   proc keyCode*(event: KeyboardEvent): int =
-    event.keysym.sym.int
+    case event.kind
+    of EventType.TextInput:
+      51 # TODO: £
+    else:
+      event.keysym.sym.int
 
   proc key*(event: KeyboardEvent): string =
-    $getScancodeName(event.keysym.scancode)
+    case event.kind
+    of EventType.TextInput:
+      result = ""
+      for c in cast[TextEditingEventObj](event).text:
+        if c == '\0': break
+        result.add(c)
+    else:
+      return $getScancodeName(event.keysym.scancode)
 
   proc preventDefault*(event: KeyboardEvent | MouseButtonEvent | MouseMotionEvent | TouchEvent) = discard
 
@@ -1226,6 +1250,16 @@ else:
     event.user = data
     checkError pushEvent(cast[ptr Event](addr event))
   {.pop.}
+
+  proc startTextInput*[T](rect: geometry.Rect[T]) =
+    var destRect = sdl2.rect(
+      rect.left.cint, rect.top.cint, rect.width.cint, rect.height.cint
+    )
+    setTextInputRect(addr destRect)
+    startTextInput()
+
+  proc stopTextInput*() =
+    sdl2.stopTextInput()
 
 when defined(js):
   proc setWindowTitle*(window: Renderer2D, title: string) =
