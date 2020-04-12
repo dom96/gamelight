@@ -8,6 +8,7 @@ when isCanvas:
   import dom, jsconsole
   import canvasjs
   import base64
+  from chroma import parseHtmlColor
 else:
   import strutils, os
   import sdl2/[image]
@@ -93,8 +94,8 @@ type
   ImageAlignment* = enum
     Center, TopLeft
 
-proc getRenderer(renderer: Renderer2D): Renderer2D = renderer
-proc getRenderer(surface: Surface2D): Renderer2D = surface.renderer2D
+proc getRenderer*(renderer: Renderer2D): Renderer2D = renderer
+proc getRenderer*(surface: Surface2D): Renderer2D = surface.renderer2D
 
 proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Point[T] =
   result = pos
@@ -284,9 +285,11 @@ when isCanvas:
   proc clear*(
     renderer: Drawable2D, style = "#000000"
   ) =
-    renderer.context.beginPath()
     renderer.context.fillStyle = style
-    renderer.context.clearRect(0, 0, renderer.canvas.width, renderer.canvas.height)
+    if parseHtmlColor(style).a == 0:
+      renderer.context.clearRect(0, 0, renderer.canvas.width, renderer.canvas.height)
+    else:
+      renderer.context.fillRect(0, 0, renderer.canvas.width, renderer.canvas.height)
 
   proc fillRect*[T: SomeNumber, Y: SomeNumber](
     renderer: Drawable2D, x, y: T, width, height: Y, style = "#000000"
@@ -569,6 +572,8 @@ when isCanvas:
     discard
 
   proc stopTextInput*() = discard
+
+  proc getDPI*(renderer: Drawable2D): float = 1.0
 else:
   # SDL2
   import sdl2_utils, sdl2_rw_stream

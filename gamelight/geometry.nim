@@ -213,6 +213,9 @@ proc intersect*[T](
 proc area*(a: Circle): float =
   math.PI * pow(a.radius, 2)
 
+proc toCircleInt*(a: Circle): Circle[int] =
+  (pos: a.pos.toPointInt(), radius: a.radius.int)
+
 when isMainModule:
   # Test cases shamelessly stolen from https://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 
