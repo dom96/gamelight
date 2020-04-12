@@ -562,10 +562,15 @@ when isCanvas:
     renderer.context.restore()
 
   proc clipRect*(renderer: Drawable2D, pos: Point[int], width, height: int) =
+    ## Clips the specified rectangle so nothing is drawn outside it.
+    ##
+    ## IE11 does not support Path2D, so this is a no-op on that browser.
     {.emit: """
-      var region = new Path2D();
-      region.rect(`pos`.`x`, `pos`.`y`, `width`, `height`);
-      `renderer`.`context`.clip(region, "nonzero");
+      if (typeof(Path2D) === typeof(Function)) {
+        var region = new Path2D();
+        region.rect(`pos`.`x`, `pos`.`y`, `width`, `height`);
+        `renderer`.`context`.clip(region, "nonzero");
+      }
     """.}
 
   proc startTextInput*[T](rect: geometry.Rect[T]) =
