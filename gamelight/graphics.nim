@@ -500,30 +500,52 @@ when isCanvas:
     dom.preventDefault(ev)
 
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEvent)) =
-    window.addEventListener("keydown", (ev: Event) => onKeyDown(ev.KeyboardEvent))
+    let p = (ev: Event) => onKeyDown(ev.KeyboardEvent)
+    {.emit: """
+      window.onkeydown = `p`;
+    """.}
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEvent)) =
-    window.addEventListener("mousedown", (ev: Event) => onMouseButtonDown(ev.MouseButtonEvent))
+    let p = (ev: Event) => onMouseButtonDown(ev.MouseButtonEvent)
+    {.emit: """
+      window.onmousedown = `p`;
+    """.}
 
   proc `onMouseButtonUp=`*(renderer: Renderer2D, onMouseButtonUp: proc (event: MouseButtonEvent)) =
-    window.addEventListener("mouseup", (ev: Event) => onMouseButtonUp(ev.MouseButtonEvent))
+    let p = (ev: Event) => onMouseButtonUp(ev.MouseButtonEvent)
+    {.emit: """
+      window.onmouseup = `p`;
+    """.}
 
   proc `onMouseMotion=`*(renderer: Renderer2D, onMouseMotion: proc (event: MouseMotionEvent)) =
-    window.addEventListener("mousemove", (ev: Event) => onMouseMotion(ev.MouseMotionEvent))
+    let p = (ev: Event) => onMouseMotion(ev.MouseMotionEvent)
+    {.emit: """
+      window.onmousemove = `p`;
+    """.}
 
   proc `onTouchMove=`*(renderer: Renderer2D, onTouchMotion: proc (event: TouchEvent)) =
-    window.addEventListener("touchmove", (ev: Event) => onTouchMotion(ev.TouchEvent))
+    let p = (ev: Event) => onTouchMotion(ev.TouchEvent)
+    {.emit: """
+      window.ontouchmove = `p`;
+    """.}
 
   proc `onTouchStart=`*(renderer: Renderer2D, onTouchStart: proc (event: TouchEvent)) =
-    window.addEventListener("touchstart", (ev: Event) => onTouchStart(ev.TouchEvent))
+    let p = (ev: Event) => onTouchStart(ev.TouchEvent)
+    {.emit: """
+      window.ontouchstart = `p`;
+    """.}
 
   proc `onTouchEnd=`*(renderer: Renderer2D, onTouchEnd: proc (event: TouchEvent)) =
-    window.addEventListener("touchend", (ev: Event) => onTouchEnd(ev.TouchEvent))
+    let p = (ev: Event) => onTouchEnd(ev.TouchEvent)
+    {.emit: """
+      window.ontouchend = `p`;
+    """.}
 
   proc `onResize=`*(renderer: Renderer2D, onResize: proc (width, height: int)) =
-    window.addEventListener("resize",
-      (ev: Event) => onResize(renderer.canvas.width, renderer.canvas.height)
-    )
+    let p = (ev: Event) => onResize(renderer.canvas.width, renderer.canvas.height)
+    {.emit: """
+      window.onresize = `p`;
+    """.}
 
   proc `onUserEvent=`*(renderer: Renderer2D, onUserEvent: proc (data: array[56-sizeof(uint32), byte])) =
     discard # TODO:
