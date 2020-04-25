@@ -109,7 +109,7 @@ proc adjustPos[T](width, height: int, pos: Point[T], align: ImageAlignment): Poi
     discard
 
 when isCanvas:
-  export KeyboardEvent, MouseEvent, TouchEvent
+  export KeyboardEvent, MouseEvent, TouchEvent, Touch
   type
     MouseButtonEvent* = MouseEvent
     MouseMotionEvent* = MouseEvent
