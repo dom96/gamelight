@@ -453,9 +453,9 @@ when isCanvas:
     assert width != 0 and height != 0
     let pos = adjustPos(width, height, pos, align)
     renderer.context.save()
-    renderer.context.translate(pos.x.int + width div 2, int(pos.y) + height div 2)
+    renderer.context.translate(pos.x + width / 2, pos.y + height / 2)
     renderer.context.rotate(degToRad(degrees))
-    renderer.context.translate(int(-pos.x) - width div 2, int(-pos.y) - height div 2)
+    renderer.context.translate(-pos.x - width / 2, -pos.y - height / 2)
     if url in renderer.getRenderer().images:
       let img = renderer.getRenderer().images[url]
       if img.complete:
