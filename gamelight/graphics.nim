@@ -1073,7 +1073,7 @@ else:
 
     let size = parseInt(s[index][0 .. ^3])
     index.inc()
-    var filename = s[index]
+    var filename = s[index .. ^1].join(" ")
     if isBold and isItalic:
       filename.add " Bold Italic"
     elif isBold:
