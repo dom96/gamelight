@@ -52,46 +52,46 @@ proc getPixelRatio*(): float =
 proc getContext*(canvasElement: Element, contextType: cstring,
     contextAttributes = ContextAttributes(alpha: false)): CanvasRenderingContext
 
-proc fillRect*(context: CanvasRenderingContext,
-    x, y, width, height: int | float)
+proc fillRect*[T: SomeNumber, Y: SomeNumber](context: CanvasRenderingContext,
+    x, y: T, width, height: Y)
 
 proc clearRect*(context: CanvasRenderingContext,
-    x, y, width, height: int | float)
+    x, y, width, height: SomeNumber)
 
-proc strokeRect*(context: CanvasRenderingContext,
-    x, y, width, height: int | float)
+proc strokeRect*[T: SomeNumber, Y: SomeNumber](context: CanvasRenderingContext,
+    x, y: T, width, height: Y)
 
 proc beginPath*(context: CanvasRenderingContext)
 proc closePath*(context: CanvasRenderingContext)
 
-proc moveTo*(context: CanvasRenderingContext, x, y: int | float)
+proc moveTo*(context: CanvasRenderingContext, x, y: SomeNumber)
 
-proc lineTo*(context: CanvasRenderingContext, x, y: int | float)
+proc lineTo*(context: CanvasRenderingContext, x, y: SomeNumber)
 
 proc stroke*(context: CanvasRenderingContext)
 
 proc fill*(context: CanvasRenderingContext)
 
-proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: int | float)
+proc fillText*(context: CanvasRenderingContext, text: cstring, x, y: SomeNumber)
 
-proc translate*(context: CanvasRenderingContext, x, y: int | float)
+proc translate*(context: CanvasRenderingContext, x, y: SomeNumber)
 
 proc rotate*(context: CanvasRenderingContext, angle: float)
 
 proc scale*(context: CanvasRenderingContext, x, y: float)
 
-proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: int | float)
+proc setTransform*(context: CanvasRenderingContext, a, b, c, d, e, f: SomeNumber)
 
-proc createImageData*(context: CanvasRenderingContext, width, height: int | float): ImageData
+proc createImageData*(context: CanvasRenderingContext, width, height: SomeNumber): ImageData
 
-proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: int | float)
+proc putImageData*(context: CanvasRenderingContext, image: ImageData, dx, dy: SomeNumber)
 
 proc save*(context: CanvasRenderingContext)
 
 proc restore*(context: CanvasRenderingContext)
 
-proc drawImage*(context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy: int | float)
+proc drawImage*(context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy: SomeNumber)
 
-proc drawImage*(context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy, dWidth, dHeight: int | float)
+proc drawImage*[T: SomeNumber, Y: SomeNumber](context: CanvasRenderingContext, img: Image | EmbedElement, dx, dy: T, dWidth, dHeight: Y)
 
-proc arc*(context: CanvasRenderingContext, x, y, radius: int | float, startAngle, endAngle: float, anticlockwise=false)
+proc arc*[T: SomeNumber, Y: SomeNumber](context: CanvasRenderingContext, x, y, radius: T, startAngle, endAngle: Y, anticlockwise=false)

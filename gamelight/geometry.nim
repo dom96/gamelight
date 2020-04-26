@@ -211,7 +211,7 @@ proc intersect*[T](
   return distance <= c.radius
 
 proc area*(a: Circle): float =
-  math.PI * pow(a.radius, 2)
+  math.PI * pow(a.radius.float, 2)
 
 proc toCircleInt*(a: Circle): Circle[int] =
   (pos: a.pos.toPointInt(), radius: a.radius.int)

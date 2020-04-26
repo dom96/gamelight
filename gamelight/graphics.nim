@@ -478,11 +478,11 @@ when isCanvas:
   proc copy*[T: Drawable2D, Y: Surface2D](renderer: T, other: Y, pos: Point, width, height: int) =
     renderer.context.drawImage(other.canvas, pos.x, pos.y, width, height)
 
-  proc fillCircle*(
-    renderer: Drawable2D, pos: Point, radius: int | float, style = "#000000"
+  proc fillCircle*[T: SomeNumber](
+    renderer: Drawable2D, pos: Point[T], radius: int | float, style = "#000000"
   ) =
     renderer.context.beginPath()
-    renderer.context.arc(pos.x, pos.y, radius, 0, 2 * math.PI)
+    renderer.context.arc(pos.x, pos.y, radius.T, 0.0, 2 * math.PI)
     renderer.context.fillStyle = style
     renderer.context.closePath()
     renderer.context.fill()
