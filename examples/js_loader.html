@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Gamelight</title>
+
+
+    <script type="text/javascript" src="font_render.js"></script> <!-- Change this to any of the samples -->
+    <style type="text/css">
+      /* https://www.bram.us/2016/05/02/prevent-overscroll-bounce-in-ios-mobilesafari-pure-css/ */
+      html,
+      body {
+        position: fixed;
+        overflow: hidden;
+      }
+      canvas { border: 1px solid black; will-change: transform; }
+
+    </style>
+  </head>
+  <body onload="onLoad();" style="margin: 0; overflow: hidden;">
+    <canvas id="canvas"></canvas>
+  </body>
+</html>

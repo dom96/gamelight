@@ -14,6 +14,7 @@ type
 
     font* {.importc.}: cstring
     textAlign* {.importc.}: cstring
+    textBaseline* {.importc.}: cstring
     globalCompositeOperation* {.importc.}: cstring
 
   ContextAttributes* = ref object

@@ -1,4 +1,5 @@
 import sugar, math, tables, colors, os, options, hashes
+import logging
 from lenientops import `/`
 
 const
@@ -40,7 +41,7 @@ when not isCanvas:
     GlyphEntry = object
       image: Image
       texture: TexturePtr
-      glyphOffset: Point[float]
+      glyphOffset: Point[int]
 
 type
   Renderer2D* = ref object
@@ -57,7 +58,7 @@ type
       savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
       fontCache: Table[(string, int), Font]
-      glyphCache: Table[(string, string, float, float, string), GlyphEntry]
+      glyphCache: Table[(string, string, float, float), GlyphEntry]
       lastFrameUpdate: uint64
       clippingMask: Option[Surface2D]
     preferredWidth: int
@@ -310,11 +311,14 @@ when isCanvas:
     renderer.context.font = font
     if center:
       renderer.context.textAlign = "center"
+      renderer.context.textBaseline = "middle"
+    else:
+      renderer.context.textBaseline = "top"
     renderer.context.fillText(text, pos.x, pos.y)
     renderer.context.textAlign = "left"
 
   proc getTextMetrics*(
-    renderer: Drawable2D, text: string, font = "12px Helvetica"
+    renderer: Drawable2D, text: cstring, font = "12px Helvetica"
   ): TextMetrics =
     renderer.context.font = font
 
@@ -1093,6 +1097,7 @@ else:
         renderer.fontCache[key] = readFontTtf(fontPath)
 
       renderer.fontCache[key].size = size.float
+      renderer.fontCache[key].lineHeight = size.float
 
     result = renderer.fontCache[key]
 
@@ -1110,49 +1115,17 @@ else:
     var texture = drawable.getSdlRenderer().createTextureFromSurface(serface)
     return texture
 
-  proc fillText*[T](renderer: Drawable2D, text: string, pos: Point[T],
-      style = "#000000", font = "12px Helvetica", center = false) =
-    let color = parseHtmlColor(style).rgba()
-    let font = renderer.getRenderer().loadFont(font)
+  proc getFontMetricsScale(font: Font): float =
+    let fontHeight = font.ascent - font.descent
+    let scale = font.size / fontHeight
+    return scale
 
-    let layout = font.typeset(text)
-    let textBounds = textBounds(layout)
-    let pos = applyTranslation(renderer, pos) -
-      Point[T](
-        x: if center: T(textBounds.x / 2) else: 0,
-        y: if center: T(textBounds.y / 2) else: 0
-      )
-    for layoutPos in layout:
-      var font = layoutPos.font
-      if layoutPos.character in font.glyphs:
-        let key = (layoutPos.character, font.name, font.size, layoutPos.subPixelShift, $color)
-        if key notin renderer.getRenderer().glyphCache:
-          var glyph = font.glyphs[layoutPos.character]
-          var glyphOffset: vmath.Vec2
-          let image = font.getGlyphImage(
-            glyph, glyphOffset,
-            subPixelShift=layoutPos.subPixelShift,
-            color=color
-          )
-          renderer.getRenderer().glyphCache[key] = GlyphEntry(
-            image: image,
-            texture: renderer.toSdlTexture(image),
-            glyphOffset: Point[float](
-              x: glyphOffset.x,
-              y: glyphOffset.y
-            )
-          )
-
-        let glyphEntry = renderer.getRenderer().glyphCache[key]
-        var destRect = sdl2.rect(
-          cint(pos.x.float + layoutPos.rect.x + glyphEntry.glyphOffset.x),
-          cint(pos.y.float + textBounds.y - 1 + glyphEntry.glyphOffset.y),
-          cint glyphEntry.image.width,
-          cint glyphEntry.image.height
-        )
-        checkError sdl2.copy(
-          renderer.getSdlRenderer, glyphEntry.texture, nil, addr destRect
-        )
+  proc getTextMetrics(
+    renderer: Drawable2D, text: string, font: Font, layout: seq[GlyphPosition]
+  ): TextMetrics =
+    let bounds = textBounds(layout)
+    let scale = getFontMetricsScale(font)
+    return TextMetrics(width: bounds.x.ceil.cint, height: cint(font.ascent*scale))
 
   proc getTextMetrics*(
     renderer: Drawable2D, text: string, font = "12px Helvetica"
@@ -1162,9 +1135,54 @@ else:
         renderer.loadFont(font)
       else:
         renderer.renderer2D.loadFont(font)
+    let layout = font.typeset(text)
+    return getTextMetrics(renderer, text, font, layout)
 
-    let size = font.textBounds(text)
-    return TextMetrics(width: size.x.ceil.cint, height: size.y.ceil.cint)
+  proc fillText*[T](renderer: Drawable2D, text: string, pos: Point[T],
+      style = "#000000", font = "12px Helvetica", center = false) =
+    let color = parseHtmlColor(style).rgba()
+    let font = renderer.getRenderer().loadFont(font)
+
+    let layout = font.typeset(text)
+    let textBounds = getTextMetrics(renderer, text, font, layout)
+    let scale = getFontMetricsScale(font)
+    let pos = applyTranslation(renderer, pos) -
+      Point[T](
+        x: if center: T(textBounds.width div 2) else: 0,
+        y: if center: T(textBounds.height div 2) - T(font.descent*scale / 2) else: 0
+      )
+    for layoutPos in layout:
+      var font = layoutPos.font
+      if layoutPos.character in font.glyphs:
+        let key = (layoutPos.character, font.name, font.size, layoutPos.subPixelShift)
+        if key notin renderer.getRenderer().glyphCache:
+          var glyph = font.glyphs[layoutPos.character]
+          var glyphOffset: vmath.Vec2
+          let image = font.getGlyphImage(
+            glyph, glyphOffset,
+            subPixelShift=layoutPos.subPixelShift,
+          )
+          renderer.getRenderer().glyphCache[key] = GlyphEntry(
+            image: image,
+            texture: renderer.toSdlTexture(image),
+            glyphOffset: Point[int](
+              x: glyphOffset.x.int,
+              y: glyphOffset.y.int
+            )
+          )
+
+        let glyphEntry = renderer.getRenderer().glyphCache[key]
+        var destRect = sdl2.rect(
+          cint(pos.x + layoutPos.rect.x.cint + glyphEntry.glyphOffset.x),
+          cint(pos.y + textBounds.height - 1 + glyphEntry.glyphOffset.y),
+          cint glyphEntry.image.width,
+          cint glyphEntry.image.height
+        )
+        checkError glyphEntry.texture.setTextureColorMod(color.r, color.g, color.b)
+        checkError glyphEntry.texture.setTextureAlphaMod(color.a)
+        checkError sdl2.copy(
+          renderer.getSdlRenderer, glyphEntry.texture, nil, addr destRect
+        )
 
   # Path drawing
   proc lineTo*(renderer: Drawable2D, x, y: float | int) =
