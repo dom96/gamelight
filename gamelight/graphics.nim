@@ -67,7 +67,7 @@ type
     scaleToScreen: bool
     when isCanvas:
       positionedElements: seq[PositionedElement]
-      images: Table[string, Image]
+      images*: Table[string, Image]
     else:
       texturesFromFile: Table[string, TexturePtr]
       texturesFromString: Table[Hash, TexturePtr]
