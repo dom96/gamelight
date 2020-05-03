@@ -119,3 +119,13 @@ proc vec2*(x, y: int): Point[int] =
 
 proc vec2*(x, y: float): Point[float] =
   Point[float](x: x, y: y)
+
+proc lerp*[T](start, finish: T, ratio: range[0.0 .. 1.0]): T =
+  ## Linear interpolation between two points.
+  let res = start + ratio.float*(finish - start)
+  return res.T
+
+proc lerp*[T](start, finish: Point[T], ratio: range[0.0 .. 1.0]): Point[T] =
+  ## Linear interpolation between two points.
+  let res = start + (finish - start)*ratio
+  return vec2(res.x.T, res.y.T)
