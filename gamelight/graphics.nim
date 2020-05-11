@@ -1149,7 +1149,7 @@ else:
     let pos = applyTranslation(renderer, pos) -
       Point[T](
         x: if center: T(textBounds.width div 2) else: 0,
-        y: if center: T(textBounds.height div 2) - T(font.descent*scale / 2) else: 0
+        y: if center: T(textBounds.height div 2) else: 0
       )
     for layoutPos in layout:
       var font = layoutPos.font
