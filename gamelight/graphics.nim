@@ -452,20 +452,29 @@ when isCanvas:
   ) =
     assert width != 0 and height != 0
     let pos = adjustPos(width, height, pos, align)
-    renderer.context.save()
-    renderer.context.translate(pos.x + width / 2, pos.y + height / 2)
-    renderer.context.rotate(degToRad(degrees))
-    renderer.context.translate(-pos.x - width / 2, -pos.y - height / 2)
+    proc doDraw(img: Image) =
+      renderer.context.save()
+      renderer.context.translate(pos.x + width / 2, pos.y + height / 2)
+      renderer.context.rotate(degToRad(degrees))
+      renderer.context.translate(-pos.x - width / 2, -pos.y - height / 2)
+      renderer.context.drawImage(img, pos.x, pos.y, width, height)
+      renderer.context.restore()
     if url in renderer.getRenderer().images:
       let img = renderer.getRenderer().images[url]
       if img.complete:
-        renderer.context.drawImage(img, pos.x, pos.y, width, height)
+        doDraw(img)
+      else:
+        let oldOnLoad = img.onload
+        img.onload =
+          proc () =
+            oldOnLoad()
+            doDraw(img)
     else:
       let img = newImage()
       img.src = url
       img.onload =
         proc () =
-          renderer.context.drawImage(img, pos.x, pos.y, width, height)
+          doDraw(img)
       renderer.getRenderer().images[url] = img
 
     renderer.context.restore()
