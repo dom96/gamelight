@@ -21,10 +21,14 @@ proc intersect*[T](line1, line2: LineSegment[T], point: var Point[T],
   ## Based on algorithm described by Paul Bourke.
   ## http://paulbourke.net/geometry/pointlineplane/
 
-  let (x1, y1) = (line1.start.x, line1.start.y)
-  let (x2, y2) = (line1.finish.x, line1.finish.y)
-  let (x3, y3) = (line2.start.x, line2.start.y)
-  let (x4, y4) = (line2.finish.x, line2.finish.y)
+  let x1 = line1.start.x
+  let y1 = line1.start.y
+  let x2 = line1.finish.x
+  let y2 = line1.finish.y
+  let x3 = line2.start.x
+  let y3 = line2.start.y
+  let x4 = line2.finish.x
+  let y4 = line2.finish.y
 
   let denom  = (y4-y3) * (x2-x1) - (x4-x3) * (y2-y1)
   let numera = (x4-x3) * (y1-y3) - (y4-y3) * (x1-x3)
