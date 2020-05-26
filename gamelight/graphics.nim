@@ -1166,7 +1166,7 @@ else:
     for layoutPos in layout:
       var font = layoutPos.font
       if layoutPos.character in font.glyphs:
-        let key = (layoutPos.character, font.name, font.size, layoutPos.subPixelShift)
+        let key = (layoutPos.character, font.name, font.size.float, layoutPos.subPixelShift.float)
         if key notin renderer.getRenderer().glyphCache:
           var glyph = font.glyphs[layoutPos.character]
           var glyphOffset: vmath.Vec2
