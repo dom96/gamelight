@@ -58,7 +58,7 @@ type
       savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
       fontCache: Table[(string, int), Font]
-      glyphCache: Table[(string, string, float, float), GlyphEntry]
+      glyphCache: Table[(string, string, float), GlyphEntry]
       lastFrameUpdate: uint64
       clippingMask: Option[Surface2D]
     preferredWidth: int
@@ -1166,7 +1166,7 @@ else:
     for layoutPos in layout:
       var font = layoutPos.font
       if layoutPos.character in font.glyphs:
-        let key = (layoutPos.character, font.name, font.size.float, layoutPos.subPixelShift.float)
+        let key = (layoutPos.character, font.name, font.size.float)
         if key notin renderer.getRenderer().glyphCache:
           var glyph = font.glyphs[layoutPos.character]
           var glyphOffset: vmath.Vec2
