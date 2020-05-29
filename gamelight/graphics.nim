@@ -57,7 +57,7 @@ type
       translationFactor*: Point[float]
       savedFactors: seq[(Point[float], Point[float])]
       currentPath: seq[Point[int]]
-      fontCache: Table[(string, int), Font]
+      fontCache: Table[string, Font]
       glyphCache: Table[(string, string, float), GlyphEntry]
       lastFrameUpdate: uint64
       clippingMask: Option[Surface2D]
@@ -1094,7 +1094,7 @@ else:
       filename.add " Italic"
     let name = filename.toLower() & ".ttf"
 
-    let key = (name, size)
+    let key = name
     if key notin renderer.fontCache:
       let fontPath =
         when defined(ios):
@@ -1108,8 +1108,8 @@ else:
       else:
         renderer.fontCache[key] = readFontTtf(fontPath)
 
-      renderer.fontCache[key].size = size.float
-      renderer.fontCache[key].lineHeight = size.float
+    renderer.fontCache[key].size = size.float
+    renderer.fontCache[key].lineHeight = size.float
 
     result = renderer.fontCache[key]
 
