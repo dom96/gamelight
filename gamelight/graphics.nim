@@ -1150,10 +1150,20 @@ else:
     let layout = font.typeset(text)
     return getTextMetrics(renderer, text, font, layout)
 
+  func sign(v: float32): float32 =
+    ## Returns the sign of a number, -1 or 1.
+    if v >= 0:
+      return 1.0
+    return -1.0
+
+  func quantize(v: float32, n: float32): float32 =
+    ## Makes v be multipe of n. Rounding to integer quantize by 1.0.
+    sign(v) * floor(abs(v) / n) * n
+
   proc fillText*[T](renderer: Drawable2D, text: string, pos: Point[T],
-      style = "#000000", font = "12px Helvetica", center = false) =
+      style = "#000000", fontStyle = "12px Helvetica", center = false) =
     let color = parseHtmlColor(style).rgba()
-    let font = renderer.getRenderer().loadFont(font)
+    let font = renderer.getRenderer().loadFont(fontStyle)
 
     let layout = font.typeset(text)
     let textBounds = getTextMetrics(renderer, text, font, layout)
@@ -1166,7 +1176,7 @@ else:
     for layoutPos in layout:
       var font = layoutPos.font
       if layoutPos.character in font.glyphs:
-        let key = (layoutPos.character, font.name, font.size.float)
+        let key = (layoutPos.character, fontStyle, quantize(layoutPos.subPixelShift, 0.25).float)
         if key notin renderer.getRenderer().glyphCache:
           var glyph = font.glyphs[layoutPos.character]
           var glyphOffset: vmath.Vec2
