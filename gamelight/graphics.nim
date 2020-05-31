@@ -43,6 +43,19 @@ when not isCanvas:
       texture: TexturePtr
       glyphOffset: Point[int]
 
+  # SDL2
+  import sdl2_utils, sdl2_rw_stream
+  from vmath import nil
+  export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
+
+  type
+    KeyboardEvent* = KeyboardEventObj
+    MouseButtonEvent* = MouseButtonEventObj
+    MouseMotionEvent* = MouseMotionEventObj
+    TouchEvent* = object
+      ev: TouchFingerEventObj
+      winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
+
 type
   Renderer2D* = ref object
     when isCanvas:
@@ -52,6 +65,8 @@ type
     else:
       window: WindowPtr
       sdlRenderer: RendererPtr
+      onKeyDownCb: proc (event: KeyboardEvent)
+      onBack*: proc ()
       events: array[EventKind, proc (evt: sdl2.Event)]
       scalingFactor: Point[float]
       translationFactor*: Point[float]
@@ -512,10 +527,16 @@ when isCanvas:
   proc preventDefault*(ev: TouchEvent | MouseEvent | KeyboardEvent) =
     dom.preventDefault(ev)
 
+  proc `onBack=`*(renderer: Renderer2D, onBack: proc ()) = discard
+
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEvent)) =
     let p = (ev: Event) => onKeyDown(ev.KeyboardEvent)
     {.emit: """
       window.onkeydown = `p`;
+    """.}
+  proc onKeyDown*(renderer: Renderer2D): proc (event: KeyboardEvent) =
+    {.emit: """
+      `result` = window.onkeydown;
     """.}
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEvent)) =
@@ -615,18 +636,6 @@ when isCanvas:
 
   proc getDPI*(renderer: Drawable2D): float = 1.0
 else:
-  # SDL2
-  import sdl2_utils, sdl2_rw_stream
-  from vmath import nil
-  export KeyboardEventObj, MouseButtonEventObj, MouseMotionEventObj
-
-  type
-    KeyboardEvent* = KeyboardEventObj
-    MouseButtonEvent* = MouseButtonEventObj
-    MouseMotionEvent* = MouseMotionEventObj
-    TouchEvent* = object
-      ev: TouchFingerEventObj
-      winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
 
   checkError sdl2.init(INIT_VIDEO)
   proc newRenderer2D*(id: string, width = 640, height = 480,
@@ -741,7 +750,9 @@ else:
       of EventType.KeyDown:
         let ev = cast[KeyboardEventObj](event)
         let skip = isTextInputActive() and ev.keyCode notin {17, 18, 8, 16, 13, 93}
-        if not renderer.events[EventKind.KeyDown].isNil and not skip:
+        if ev.keysym.scancode == SDL_SCANCODE_AC_BACK and not renderer.onBack.isNil:
+          renderer.onBack()
+        elif not renderer.events[EventKind.KeyDown].isNil and not skip:
           renderer.events[EventKind.KeyDown](event)
       of EventType.MouseButtonDown:
         if not renderer.events[EventKind.MouseButtonDown].isNil:
@@ -864,11 +875,14 @@ else:
       ))
 
   proc `onKeyDown=`*(renderer: Renderer2D, onKeyDown: proc (event: KeyboardEventObj)) =
+    renderer.onKeyDownCb = onKeyDown
     renderer.events[EventKind.KeyDown] =
       proc (event: sdl2.Event) =
         let ev = cast[sdl2.KeyboardEventObj](event)
         if not onKeyDown.isNil:
           onKeyDown(ev)
+  proc onKeyDown*(renderer: Renderer2D): proc (event: KeyboardEvent) =
+    renderer.onKeyDownCb
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEventObj)) =
     renderer.events[EventKind.MouseButtonDown] =
