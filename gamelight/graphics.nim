@@ -66,6 +66,7 @@ type
       window: WindowPtr
       sdlRenderer: RendererPtr
       onKeyDownCb: proc (event: KeyboardEvent)
+      onResizeCb: proc (width, height: int)
       onBack*: proc ()
       events: array[EventKind, proc (evt: sdl2.Event)]
       scalingFactor: Point[float]
@@ -581,6 +582,11 @@ when isCanvas:
       window.onresize = `p`;
     """.}
 
+  proc onResize*(renderer: Renderer2D): proc (width, height: int) =
+    {.emit: """
+      `result` = window.onresize;
+    """.}
+
   proc `onUserEvent=`*(renderer: Renderer2D, onUserEvent: proc (data: array[56-sizeof(uint32), byte])) =
     discard # TODO:
 
@@ -937,10 +943,14 @@ else:
   proc getWidth*(renderer: Drawable2D): int
   proc getHeight*(renderer: Drawable2D): int
   proc `onResize=`*(renderer: Renderer2D, onResize: proc (width, height: int)) =
+    renderer.onResizeCb = onResize
     renderer.events[EventKind.SizeChanged] =
       proc (event: sdl2.Event) =
         if not onResize.isNil:
           onResize(renderer.getWidth, renderer.getHeight)
+
+  proc onResize*(renderer: Renderer2D): proc (width, height: int) =
+    return renderer.onResizeCb
 
   type
     UserEventData* = object
