@@ -1130,6 +1130,8 @@ else:
       when defined(android):
         renderer.fontCache[key] = readFontTtf(newSdlFileStream(fontPath))
       else:
+        if not fileExists(fontPath):
+          raise newException(IOError, "File not found: " & fontPath)
         renderer.fontCache[key] = readFontTtf(fontPath)
 
     renderer.fontCache[key].size = size.float
@@ -1356,6 +1358,18 @@ else:
 
   proc stopTextInput*() =
     sdl2.stopTextInput()
+
+  proc `[]=`*(renderer: Drawable2D, pos: (int, int) | (float, float),
+              color: colors.Color) =
+    let (r, g, b) = color.extractRGB()
+    checkError renderer.getSdlRenderer.setDrawColor(
+      r.uint8, g.uint8, b.uint8, 255
+    )
+
+    checkError renderer.getSdlRenderer.drawPoint(pos[0].cint, pos[1].cint)
+
+  proc `[]=`*(renderer: Drawable2D, pos: Point, color: colors.Color) =
+    renderer[(pos.x, pos.y)] = color
 
 when defined(js):
   proc setWindowTitle*(window: Renderer2D, title: string) =
