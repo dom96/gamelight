@@ -18,7 +18,7 @@ type
     globalCompositeOperation* {.importc.}: cstring
 
   ContextAttributes* = ref object
-    alpha* {.importc.}: bool
+    globalAlpha* {.importc.}: float
     # TODO: WebGL
 
   ImageData* = ref object

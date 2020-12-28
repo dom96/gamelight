@@ -63,6 +63,7 @@ type
       context*: CanvasRenderingContext
       lastFrameUpdate: float
     else:
+      context*: tuple[globalAlpha: float]
       window: WindowPtr
       sdlRenderer: RendererPtr
       onKeyDownCb: proc (event: KeyboardEvent)
@@ -94,6 +95,7 @@ type
       canvas: EmbedElement
       context*: CanvasRenderingContext
     else:
+      context*: tuple[globalAlpha: float]
       texture: TexturePtr
       scalingFactor: Point[float]
       translationFactor: Point[int]
@@ -658,6 +660,7 @@ else:
     )
 
     result = Renderer2D(
+      context: (globalAlpha: 1.0),
       window: window,
       sdlRenderer: renderer,
       preferredWidth: width,
@@ -681,6 +684,7 @@ else:
   proc newSurface2D*(renderer: Renderer2D, width: int, height: int): Surface2D =
     result = Surface2D(
       renderer2D: renderer,
+      context: (globalAlpha: 1.0),
       texture: sdl2.createTexture(
         renderer.sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
         width.cint, height.cint
@@ -1041,6 +1045,8 @@ else:
         (cint(width div 2), cint(height div 2))
       of ImageAlignment.TopLeft:
         (0.cint, 0.cint)
+
+    checkError img.setTextureAlphaMod(uint8(renderer.context.globalAlpha * 255))
 
     var destRect = sdl2.rect(pos.x.cint, pos.y.cint, width.cint, height.cint)
     checkError renderer.getSdlRenderer.copyEx(img, nil, addr destRect, degrees, addr center)
