@@ -128,6 +128,18 @@ proc lerp*[T](start, finish: T, ratio: range[0.0 .. 1.0]): T =
   let res = start + ratio.float*(finish - start)
   return res.T
 
+proc lerp*[T](a, b, c: T, ratio: range[0.0 .. 1.0]): T =
+  ## Linear interpolation between three points.
+
+  # Source: https://forum.unity.com/threads/lerp-multi-points-a-to-b-to-c.453751/#post-6522572
+
+  template lerpRatioUnsafe(start, finish, ratio): T =
+    T(start + ratio.float*(finish - start))
+  if ratio <= 0.5:
+    return lerpRatioUnsafe(a, b, ratio.float * 2)
+  else:
+    return lerpRatioUnsafe(b * 2, c, ratio)
+
 proc lerp*[T](start, finish: Point[T], ratio: range[0.0 .. 1.0]): Point[T] =
   ## Linear interpolation between two points.
   let res = start + (finish - start)*ratio
