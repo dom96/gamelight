@@ -28,7 +28,7 @@ when isCanvas:
 
 type
   EventKind* = enum
-    KeyDown, MouseButtonDown, MouseButtonUp, MouseMotion,
+    KeyDown, KeyUp, MouseButtonDown, MouseButtonUp, MouseMotion,
     FingerMotion, FingerUp, FingerDown, SizeChanged,
     UserEvent
 
@@ -66,7 +66,7 @@ type
       context*: tuple[globalAlpha: float]
       window: WindowPtr
       sdlRenderer: RendererPtr
-      onKeyDownCb: proc (event: KeyboardEvent)
+      onKeyDownCb, onKeyUpCb: proc (event: KeyboardEvent)
       onResizeCb: proc (width, height: int)
       onBack*: proc ()
       events: array[EventKind, proc (evt: sdl2.Event)]
@@ -541,6 +541,15 @@ when isCanvas:
     {.emit: """
       `result` = window.onkeydown;
     """.}
+  proc `onKeyUp=`*(renderer: Renderer2D, onKeyUp: proc (event: KeyboardEvent)) =
+    let p = (ev: Event) => onKeyUp(ev.KeyboardEvent)
+    {.emit: """
+      window.onkeyup = `p`;
+    """.}
+  proc onKeyUp*(renderer: Renderer2D): proc (event: KeyboardEvent) =
+    {.emit: """
+      `result` = window.onkeyup;
+    """.}
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEvent)) =
     let p = (ev: Event) => onMouseButtonDown(ev.MouseButtonEvent)
@@ -764,6 +773,9 @@ else:
           renderer.onBack()
         elif not renderer.events[EventKind.KeyDown].isNil and not skip:
           renderer.events[EventKind.KeyDown](event)
+      of EventType.KeyUp:
+        if not renderer.events[EventKind.KeyUp].isNil:
+          renderer.events[EventKind.KeyUp](event)
       of EventType.MouseButtonDown:
         if not renderer.events[EventKind.MouseButtonDown].isNil:
           renderer.events[EventKind.MouseButtonDown](event)
@@ -886,6 +898,16 @@ else:
           onKeyDown(ev)
   proc onKeyDown*(renderer: Renderer2D): proc (event: KeyboardEvent) =
     renderer.onKeyDownCb
+
+  proc `onKeyUp=`*(renderer: Renderer2D, onKeyUp: proc (event: KeyboardEventObj)) =
+    renderer.onKeyUpCb = onKeyUp
+    renderer.events[EventKind.KeyUp] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.KeyboardEventObj](event)
+        if not onKeyUp.isNil:
+          onKeyUp(ev)
+  proc onKeyUp*(renderer: Renderer2D): proc (event: KeyboardEvent) =
+    renderer.onKeyUpCb
 
   proc `onMouseButtonDown=`*(renderer: Renderer2D, onMouseButtonDown: proc (event: MouseButtonEventObj)) =
     renderer.events[EventKind.MouseButtonDown] =
