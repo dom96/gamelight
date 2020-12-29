@@ -16,9 +16,10 @@ type
     textAlign* {.importc.}: cstring
     textBaseline* {.importc.}: cstring
     globalCompositeOperation* {.importc.}: cstring
+    globalAlpha* {.importc.}: float
 
   ContextAttributes* = ref object
-    globalAlpha* {.importc.}: float
+    alpha* {.importc.}: bool
     # TODO: WebGL
 
   ImageData* = ref object
