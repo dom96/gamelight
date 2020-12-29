@@ -750,16 +750,16 @@ else:
 
     proc emscripten_cancel_main_loop*() {.header: "<emscripten.h>".}
 
-  proc keyCode*(event: KeyboardEvent): int
   proc loop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)): bool =
     var event = sdl2.defaultEvent
+    stopTextInput()
     while pollEvent(event):
       case event.kind
       of QuitEvent:
         return true
       of EventType.KeyDown:
         let ev = cast[KeyboardEventObj](event)
-        let skip = isTextInputActive() and ev.keyCode notin {17, 18, 8, 16, 13, 93}
+        let skip = isTextInputActive()
         if ev.keysym.scancode == SDL_SCANCODE_AC_BACK and not renderer.onBack.isNil:
           renderer.onBack()
         elif not renderer.events[EventKind.KeyDown].isNil and not skip:
@@ -833,13 +833,6 @@ else:
 
       destroy renderer.getSdlRenderer
       destroy renderer.window
-
-  proc keyCode*(event: KeyboardEvent): int =
-    case event.kind
-    of EventType.TextInput:
-      51 # TODO: £
-    else:
-      event.keysym.sym.int
 
   proc key*(event: KeyboardEvent): string =
     case event.kind
