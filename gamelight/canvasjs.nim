@@ -20,6 +20,7 @@ type
 
   ContextAttributes* = ref object
     alpha* {.importc.}: bool
+    desynchronized* {.importc.}: bool
     # TODO: WebGL
 
   ImageData* = ref object
@@ -52,7 +53,7 @@ proc getPixelRatio*(): float =
 {.push importcpp.}
 
 proc getContext*(canvasElement: Element, contextType: cstring,
-    contextAttributes = ContextAttributes(alpha: false)): CanvasRenderingContext
+    contextAttributes = ContextAttributes(alpha: true, desynchronized: false)): CanvasRenderingContext
 
 proc fillRect*[T: SomeNumber, Y: SomeNumber](context: CanvasRenderingContext,
     x, y: T, width, height: Y)
