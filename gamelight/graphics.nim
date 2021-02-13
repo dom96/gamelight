@@ -627,6 +627,13 @@ when isCanvas:
   proc translate*(renderer: Drawable2D, x, y: float) =
     renderer.context.translate(x, y)
 
+  proc getTranslation*(renderer: Drawable2D): Point[float] =
+    let ctx = renderer.context
+    {.emit: """
+      `result`.`x` = `ctx`.getTransform().e
+      `result`.`y` = `ctx`.getTransform().f
+    """.}
+
   proc save*(renderer: Drawable2D) =
     renderer.context.save()
 
@@ -1332,6 +1339,9 @@ else:
 
   proc translate*(renderer: Drawable2D, x, y: float) =
     renderer.translationFactor = vec.Point[float](x: x, y: y)
+
+  proc getTranslation*(renderer: Drawable2D): Point[float] =
+    return renderer.translationFactor
 
   proc save*(renderer: Drawable2D) =
     checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
