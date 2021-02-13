@@ -630,8 +630,17 @@ when isCanvas:
   proc getTranslation*(renderer: Drawable2D): Point[float] =
     let ctx = renderer.context
     {.emit: """
-      `result`.`x` = `ctx`.getTransform().e
-      `result`.`y` = `ctx`.getTransform().f
+      var trans = `ctx`.getTransform();
+      `result`.`x` = trans.e / trans.a;
+      `result`.`y` = trans.f / trans.d;
+    """.}
+
+  proc getScaling*(renderer: Drawable2D): Point[float] =
+    let ctx = renderer.context
+    {.emit: """
+      var trans = `ctx`.getTransform();
+      `result`.`x` = trans.a;
+      `result`.`y` = trans.d;
     """.}
 
   proc save*(renderer: Drawable2D) =
@@ -1341,6 +1350,9 @@ else:
 
   proc getTranslation*(renderer: Drawable2D): Point[float] =
     return renderer.translationFactor
+
+  proc getScaling*(renderer: Drawable2D): Point[float] =
+    return renderer.scalingFactor
 
   proc save*(renderer: Drawable2D) =
     checkError sdl2.setClipRect(renderer.getSdlRenderer, nil)
