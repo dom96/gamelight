@@ -767,7 +767,6 @@ else:
 
   proc loop*(renderer: Renderer2D, onTick: proc (elapsedTime: float)): bool =
     var event = sdl2.defaultEvent
-    stopTextInput()
     while pollEvent(event):
       case event.kind
       of QuitEvent:
