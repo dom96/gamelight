@@ -349,6 +349,7 @@ when isCanvas:
       `result`.`height` =  `renderer`.`context`.measureText("M").width;
     """.}
 
+  # TODO: The below functions aren't available in SDL backend.
   proc setTranslation*(renderer: Drawable2D, pos: Point, zoom=1.0) =
     renderer.context.setTransform(zoom, 0, 0, zoom, pos.x, pos.y)
 
@@ -494,8 +495,6 @@ when isCanvas:
         proc () =
           doDraw(img)
       renderer.getRenderer().images[url] = img
-
-    renderer.context.restore()
 
   proc drawImageFromMemory*(
     renderer: Drawable2D, contents: string, pos: Point, width, height: int,
