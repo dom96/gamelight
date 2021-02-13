@@ -1128,7 +1128,7 @@ else:
 
     assert s[index].endsWith("px")
 
-    let size = parseInt(s[index][0 .. ^3])
+    let size = int(parseFloat(s[index][0 .. ^3]))
     index.inc()
     var filename = s[index .. ^1].join(" ")
     if isBold and isItalic:
