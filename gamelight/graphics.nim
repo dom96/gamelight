@@ -29,13 +29,16 @@ when isCanvas:
 type
   EventKind* = enum
     KeyDown, KeyUp, MouseButtonDown, MouseButtonUp, MouseMotion,
-    FingerMotion, FingerUp, FingerDown, SizeChanged,
+    FingerMotion, FingerUp, FingerDown, SizeChanged, MouseWheel,
     UserEvent
 
   FileFormat* = enum
     FileFormatSVG
 
 
+type
+  WheelDeltaMode* = enum
+    DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE
 when not isCanvas:
   type
     GlyphEntry = object
@@ -52,9 +55,16 @@ when not isCanvas:
     KeyboardEvent* = KeyboardEventObj
     MouseButtonEvent* = MouseButtonEventObj
     MouseMotionEvent* = MouseMotionEventObj
+    MouseWheelEvent* = MouseWheelEventObj
     TouchEvent* = object
       ev: TouchFingerEventObj
       winWidth, winHeight: int # Needed to denormalize the `x` and `y`.
+else:
+  type
+    MouseWheelEvent* = ref object of MouseEvent
+      deltaX*: float
+      deltaY*: float
+      deltaMode*: WheelDeltaMode
 
 type
   Renderer2D* = ref object
@@ -68,6 +78,7 @@ type
       sdlRenderer: RendererPtr
       onKeyDownCb, onKeyUpCb: proc (event: KeyboardEvent)
       onResizeCb: proc (width, height: int)
+      onWheelCb: proc (event: MouseWheelEvent)
       onBack*: proc ()
       events: array[EventKind, proc (evt: sdl2.Event)]
       scalingFactor: Point[float]
@@ -597,6 +608,17 @@ when isCanvas:
       `result` = window.onresize;
     """.}
 
+  proc `onMouseWheel=`*(renderer: Renderer2D, onWheel: proc (event: MouseWheelEvent)) =
+    let p = (ev: Event) => onWheel(ev.MouseWheelEvent)
+    {.emit: """
+      window.onwheel = `p`;
+    """.}
+
+  proc onMouseWheel*(renderer: Renderer2D): proc (event: MouseWheelEvent) =
+    {.emit: """
+      `result` = window.onwheel;
+    """.}
+
   proc `onUserEvent=`*(renderer: Renderer2D, onUserEvent: proc (data: array[56-sizeof(uint32), byte])) =
     discard # TODO:
 
@@ -799,6 +821,9 @@ else:
       of EventType.MouseMotion:
         if not renderer.events[EventKind.MouseMotion].isNil:
           renderer.events[EventKind.MouseMotion](event)
+      of EventType.MouseWheel:
+        if not renderer.events[EventKind.MouseWheel].isNil:
+          renderer.events[EventKind.MouseWheel](event)
       of EventType.FingerMotion:
         if not renderer.events[EventKind.FingerMotion].isNil:
           renderer.events[EventKind.FingerMotion](event)
@@ -877,6 +902,12 @@ else:
 
   proc clientY*(event: MouseButtonEvent | MouseMotionEvent): int =
     event.y.int
+
+  proc deltaY*(event: MouseWheelEvent): float =
+    event.y.float * (if event.direction == SDL_MOUSEWHEEL_NORMAL: -1 else: 1)
+
+  proc deltaX*(event: MouseWheelEvent): float =
+    event.x.float * (if event.direction == SDL_MOUSEWHEEL_NORMAL: -1 else: 1)
 
   type
     Touch* = object
@@ -984,6 +1015,17 @@ else:
 
   proc onResize*(renderer: Renderer2D): proc (width, height: int) =
     return renderer.onResizeCb
+
+  proc `onMouseWheel=`*(renderer: Renderer2D, onWheel: proc (event: MouseWheelEvent)) =
+    renderer.onWheelCb = onWheel
+    renderer.events[EventKind.MouseWheel] =
+      proc (event: sdl2.Event) =
+        let ev = cast[sdl2.MouseWheelEventObj](event)
+        if not onWheel.isNil:
+          onWheel(ev)
+
+  proc onMouseWheel*(renderer: Renderer2D): proc (event: MouseWheelEvent) =
+    return renderer.onWheelCb
 
   type
     UserEventData* = object
